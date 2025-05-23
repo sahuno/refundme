@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { plaidClient } from '@/lib/plaid/client'
 
+interface PlaidTransaction {
+  transaction_id: string
+  amount: number
+  date: string
+  name: string
+  merchant_name?: string | null
+  category?: string[] | null
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = createClient()
@@ -32,7 +41,7 @@ export async function POST(req: Request) {
     })
     const plaidTransactions = response.data.transactions
     // Map to DB schema
-    const transactions = plaidTransactions.map((t: Record<string, any>) => ({
+    const transactions = plaidTransactions.map((t: PlaidTransaction) => ({
       user_id: user.id,
       plaid_transaction_id: t.transaction_id,
       bank_connection_id,

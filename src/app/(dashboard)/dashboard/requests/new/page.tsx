@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +23,7 @@ interface ManualItem {
   category: string
 }
 
-export default function NewRequestPage() {
+function NewRequestContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -178,5 +178,13 @@ export default function NewRequestPage() {
       </Card>
       <Toast open={toast.open} onOpenChange={o => setToast(t => ({ ...t, open: o }))} title={toast.title} description={toast.description} />
     </div>
+  )
+}
+
+export default function NewRequestPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewRequestContent />
+    </Suspense>
   )
 } 

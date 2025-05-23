@@ -52,7 +52,7 @@ export default function RegisterPage() {
       }
       setToast({ open: true, title: 'Success', description: 'Check your email to confirm your account.' })
       setTimeout(() => router.push('/login?message=Check your email to confirm your account'), 1500)
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as Error
       setToast({ open: true, title: 'Registration failed', description: err.message || 'Please try again.' })
     } finally {

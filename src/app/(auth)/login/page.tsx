@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-export default function LoginPage() {
+function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
   const router = useRouter()
@@ -41,7 +41,7 @@ export default function LoginPage() {
         router.push('/dashboard')
         router.refresh()
       }, 1000)
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as Error
       setToast({ open: true, title: 'Login failed', description: err.message || 'Please try again.' })
     } finally {
@@ -95,5 +95,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 } 

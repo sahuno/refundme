@@ -9,7 +9,18 @@ export async function fetchUserTransactions(userId: string) {
     .order('date', { ascending: false })
 }
 
-export async function insertTransactions(transactions: Record<string, unknown>[]) {
+interface Transaction {
+  user_id: string
+  plaid_transaction_id: string
+  bank_connection_id: string
+  amount: number
+  date: string
+  description: string
+  merchant_name?: string
+  category?: string
+}
+
+export async function insertTransactions(transactions: Transaction[]) {
   const supabase = createClient()
   return supabase
     .from('transactions')

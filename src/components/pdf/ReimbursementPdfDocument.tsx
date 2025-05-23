@@ -13,7 +13,12 @@ interface ItemPdf {
   amount: number
 }
 
-export function ReimbursementPdfDocument({ request, items }: { request: RequestPdf, items: ItemPdf[] }) {
+interface ReimbursementPdfDocumentProps {
+  request: RequestPdf
+  items: ItemPdf[]
+}
+
+export function ReimbursementPdfDocument({ request, items }: ReimbursementPdfDocumentProps) {
   return (
     <Document>
       <Page size="A4" style={styles.body}>
@@ -45,7 +50,7 @@ export function ReimbursementPdfDocument({ request, items }: { request: RequestP
 const styles = StyleSheet.create({
   body: { padding: 24 },
   header: { fontSize: 20, marginBottom: 16, fontWeight: 'bold' },
-  table: { display: 'table', width: 'auto', marginTop: 16 },
+  table: { width: 'auto', marginTop: 16 },
   tableRow: { flexDirection: 'row' },
   tableColHeader: { width: '25%', fontWeight: 'bold', fontSize: 12, borderBottom: 1, marginBottom: 4 },
   tableCol: { width: '25%', fontSize: 10 },

@@ -11,6 +11,7 @@ interface Request {
   created_at: string
   total_amount: number
   status: string
+  student_name: string
 }
 
 export default function RequestsPage() {
