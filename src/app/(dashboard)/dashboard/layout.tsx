@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="space-x-4">
           <Link href="/dashboard" className="hover:underline">Home</Link>
           <Link href="/dashboard/transactions" className="hover:underline">Transactions</Link>
+          <Link href="/dashboard/requests" className="hover:underline">Requests</Link>
         </nav>
         <form action={logout} method="post">
           <button type="submit" className="ml-4 px-3 py-1 bg-red-600 rounded hover:bg-red-700">Logout</button>
