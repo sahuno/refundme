@@ -35,6 +35,7 @@ export default function NewRequestPage() {
   const [manual, setManual] = useState<ManualItem>({ description: '', amount: 0, date: '', category: '' })
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
 
   useEffect(() => {
     const txIds = searchParams.get('tx')?.split(',').filter(Boolean) || []
@@ -60,6 +61,11 @@ export default function NewRequestPage() {
   const handleSaveDraft = async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      setToast({ open: true, title: 'Error', description: 'User not found. Please log in again.' })
+      return
+    }
     // 1. Create request
     const { data: req, error: reqError } = await supabase
       .from('reimbursement_requests')
@@ -68,7 +74,7 @@ export default function NewRequestPage() {
       .single()
     if (reqError) {
       setLoading(false)
-      alert('Error saving request')
+      setToast({ open: true, title: 'Error', description: 'Error saving request.' })
       return
     }
     // 2. Create items
@@ -95,7 +101,7 @@ export default function NewRequestPage() {
     const { error: itemsError } = await supabase.from('reimbursement_items').insert(items)
     setLoading(false)
     if (itemsError) {
-      alert('Error saving items')
+      setToast({ open: true, title: 'Error', description: 'Error saving items.' })
       return
     }
     router.push('/dashboard/requests')
@@ -173,6 +179,7 @@ export default function NewRequestPage() {
           </Button>
         </CardContent>
       </Card>
+      <Toast open={toast.open} onOpenChange={o => setToast(t => ({ ...t, open: o }))} title={toast.title} description={toast.description} />
     </div>
   )
 } 

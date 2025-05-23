@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { plaidClient } from '@/lib/plaid/client'
 import { CountryCode, Products } from 'plaid'
 
 export async function POST() {
   try {
-    const supabase = createClient()
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
