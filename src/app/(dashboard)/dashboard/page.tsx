@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PlaidLink } from '@/components/plaid/PlaidLink'
+import { AIFeatureDemo } from '@/components/ai/AIFeatureDemo'
 
 interface Allowance {
   total_amount: number
@@ -109,6 +110,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AIFeatureDemo />
     </div>
   )
 } 

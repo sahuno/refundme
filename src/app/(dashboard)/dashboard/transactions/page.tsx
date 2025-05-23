@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { TransactionAnalyzer } from '@/components/ai/TransactionAnalyzer'
 
 interface Transaction {
   id: string
@@ -18,6 +20,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAIAnalyzer, setShowAIAnalyzer] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -44,22 +47,44 @@ export default function TransactionsPage() {
     router.push(`/dashboard/requests/new?tx=${selected.join(',')}`)
   }
 
+  const handleAISelection = (eligibleTransactions: Transaction[]) => {
+    const ids = eligibleTransactions.map(t => t.id)
+    setSelected(ids)
+    setShowAIAnalyzer(false)
+  }
+
   return (
     <div className="space-y-6 bg-white text-gray-900 min-h-screen">
-      <h1 className="text-3xl font-bold">Transactions</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Transactions</h1>
+        <div className="space-x-2">
+          <Button
+            onClick={() => setShowAIAnalyzer(!showAIAnalyzer)}
+            variant="outline"
+            disabled={transactions.length === 0}
+          >
+            🤖 AI Analysis
+          </Button>
+          {selected.length > 0 && (
+            <Button onClick={handleCreateRequest}>
+              Create Request ({selected.length})
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {showAIAnalyzer && (
+        <TransactionAnalyzer
+          transactions={transactions}
+          onEligibleSelected={handleAISelection}
+        />
+      )}
+
       <Card className="bg-white text-gray-900 shadow">
         <CardHeader>
           <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          {selected.length > 0 && (
-            <button
-              className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              onClick={handleCreateRequest}
-            >
-              Create Reimbursement Request ({selected.length} items)
-            </button>
-          )}
           {loading ? (
             <p>Loading...</p>
           ) : transactions.length === 0 ? (
