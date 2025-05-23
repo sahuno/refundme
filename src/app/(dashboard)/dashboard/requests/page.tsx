@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Toast } from '@/components/ui/toast'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { ReimbursementPdfDocument } from '@/components/pdf/ReimbursementPdfDocument'
 
@@ -12,32 +14,111 @@ interface Request {
   total_amount: number
   status: string
   student_name: string
+  notes?: string
+}
+
+interface RequestItem {
+  id: string
+  date: string
+  description: string
+  category: string
+  amount: number
 }
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<Request[]>([])
+  const [requestItems, setRequestItems] = useState<Record<string, RequestItem[]>>({})
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
   const supabase = createClient()
 
   useEffect(() => {
     async function fetchRequests() {
       setLoading(true)
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Fetch user profile for student name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
+      // Fetch requests with student name
+      const { data: requestsData, error } = await supabase
         .from('reimbursement_requests')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-      if (!error && data) setRequests(data)
+
+      if (!error && requestsData) {
+        const requestsWithName = requestsData.map(req => ({
+          ...req,
+          student_name: profile?.full_name || 'Unknown Student'
+        }))
+        setRequests(requestsWithName)
+
+        // Fetch items for each request
+        const itemsMap: Record<string, RequestItem[]> = {}
+        for (const request of requestsData) {
+          const { data: items } = await supabase
+            .from('reimbursement_items')
+            .select('*')
+            .eq('request_id', request.id)
+          
+          if (items) {
+            itemsMap[request.id] = items
+          }
+        }
+        setRequestItems(itemsMap)
+      }
       setLoading(false)
     }
     fetchRequests()
   }, [supabase])
 
   const handleSubmit = async (id: string) => {
-    await supabase
-      .from('reimbursement_requests')
-      .update({ status: 'submitted', submitted_at: new Date().toISOString() })
-      .eq('id', id)
-    window.location.reload()
+    setSubmitting(id)
+    try {
+      const response = await fetch('/api/submit-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ request_id: id }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setToast({
+          open: true,
+          title: 'Request Submitted!',
+          description: result.email_sent 
+            ? 'Your request has been submitted and admin notified via email.'
+            : 'Your request has been submitted successfully.'
+        })
+        
+        // Refresh the requests
+        window.location.reload()
+      } else {
+        setToast({
+          open: true,
+          title: 'Submission Failed',
+          description: result.error || 'Failed to submit request'
+        })
+      }
+    } catch {
+      setToast({
+        open: true,
+        title: 'Error',
+        description: 'Network error occurred while submitting request'
+      })
+    } finally {
+      setSubmitting(null)
+    }
   }
 
   return (
@@ -70,15 +151,17 @@ export default function RequestsPage() {
                     <td>{req.status}</td>
                     <td>
                       {req.status === 'draft' && (
-                        <button
-                          className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                        <Button
+                          size="sm"
                           onClick={() => handleSubmit(req.id)}
+                          disabled={submitting === req.id}
+                          className="mr-2"
                         >
-                          Submit
-                        </button>
+                          {submitting === req.id ? 'Submitting...' : 'Submit'}
+                        </Button>
                       )}
                       <PDFDownloadLink
-                        document={<ReimbursementPdfDocument request={req} items={[]} />}
+                        document={<ReimbursementPdfDocument request={req} items={requestItems[req.id] || []} />}
                         fileName={`reimbursement-request-${req.id}.pdf`}
                       >
                         {({ loading }) => loading ? 'Generating...' : 'Generate PDF'}
@@ -91,6 +174,12 @@ export default function RequestsPage() {
           )}
         </CardContent>
       </Card>
+      <Toast 
+        open={toast.open} 
+        onOpenChange={(open) => setToast(t => ({ ...t, open }))} 
+        title={toast.title} 
+        description={toast.description} 
+      />
     </div>
   )
 } 

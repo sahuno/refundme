@@ -1,0 +1,173 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+interface RequestSubmissionData {
+  request_id: string
+  student_name: string
+  total_amount: number
+  items: Array<{
+    description: string
+    amount: number
+    date: string
+    category: string
+  }>
+}
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@university.edu'
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@refundme.app'
+
+async function sendSubmissionEmail(data: RequestSubmissionData) {
+  if (!RESEND_API_KEY) {
+    console.log('No Resend API key configured - email notification skipped')
+    return { success: true, message: 'Email notification skipped (no API key)' }
+  }
+
+  try {
+    const itemsTable = data.items.map(item => 
+      `<tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">${item.date}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${item.description}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${item.category}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">$${item.amount.toFixed(2)}</td>
+      </tr>`
+    ).join('')
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">New Reimbursement Request Submitted</h2>
+        
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Request Details</h3>
+          <p><strong>Student:</strong> ${data.student_name}</p>
+          <p><strong>Request ID:</strong> ${data.request_id}</p>
+          <p><strong>Total Amount:</strong> $${data.total_amount.toFixed(2)}</p>
+          <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
+
+        <h3>Expense Items</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f0f0f0;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Date</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Description</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Category</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsTable}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding: 15px; background-color: #e8f4fd; border-radius: 8px;">
+          <p style="margin: 0;"><strong>Next Steps:</strong></p>
+          <p style="margin: 5px 0 0 0;">Please review this request in the admin dashboard and approve/reject as appropriate.</p>
+        </div>
+      </div>
+    `
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [ADMIN_EMAIL],
+        subject: `New Reimbursement Request from ${data.student_name} - $${data.total_amount.toFixed(2)}`,
+        html: emailHtml,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Email API error: ${response.status}`)
+    }
+
+    const result = await response.json()
+    return { success: true, emailId: result.id }
+
+  } catch (error) {
+    console.error('Email notification failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { request_id } = await req.json()
+
+    if (!request_id) {
+      return NextResponse.json({ error: 'Request ID is required' }, { status: 400 })
+    }
+
+    // Get request details
+    const { data: request, error: requestError } = await supabase
+      .from('reimbursement_requests')
+      .select('*')
+      .eq('id', request_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (requestError || !request) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 })
+    }
+
+    // Get user profile for student name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    // Get request items
+    const { data: items, error: itemsError } = await supabase
+      .from('reimbursement_items')
+      .select('*')
+      .eq('request_id', request_id)
+
+    if (itemsError) {
+      return NextResponse.json({ error: 'Failed to fetch request items' }, { status: 500 })
+    }
+
+    // Update request status to submitted
+    const { error: updateError } = await supabase
+      .from('reimbursement_requests')
+      .update({ 
+        status: 'submitted', 
+        submitted_at: new Date().toISOString() 
+      })
+      .eq('id', request_id)
+
+    if (updateError) {
+      return NextResponse.json({ error: 'Failed to update request status' }, { status: 500 })
+    }
+
+    // Send email notification
+    const emailResult = await sendSubmissionEmail({
+      request_id,
+      student_name: profile?.full_name || 'Unknown Student',
+      total_amount: request.total_amount,
+      items: items || []
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Request submitted successfully',
+      email_sent: emailResult.success,
+      email_error: emailResult.success ? null : emailResult.error
+    })
+
+  } catch (error) {
+    console.error('Submission error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
