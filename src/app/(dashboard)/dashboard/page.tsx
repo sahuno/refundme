@@ -53,11 +53,11 @@ export default function DashboardPage() {
   }, [supabase])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white text-gray-900 min-h-screen">
       <h1 className="text-3xl font-bold">Dashboard</h1>
       
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="bg-white text-gray-900 shadow">
           <CardHeader>
             <CardTitle>Allowance</CardTitle>
           </CardHeader>
@@ -74,7 +74,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white text-gray-900 shadow">
           <CardHeader>
             <CardTitle>Bank Connections</CardTitle>
           </CardHeader>

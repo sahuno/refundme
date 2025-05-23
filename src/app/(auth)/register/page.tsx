@@ -7,57 +7,53 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Toast } from '@/components/ui/toast'
+
+const schema = z.object({
+  fullName: z.string().min(2, 'Full name required'),
+  email: z.string().email('Invalid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
   const router = useRouter()
   const supabase = createClient()
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: FormData) => {
     setLoading(true)
-
     try {
-      // First, create the user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: data.email,
+        password: data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: fullName,
-          },
+          data: { full_name: data.fullName },
         },
       })
-
       if (authError) throw authError
-
-      // Then, create the profile
       if (authData.user) {
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
             id: authData.user.id,
             email: authData.user.email,
-            full_name: fullName,
+            full_name: data.fullName,
             role: 'student',
           })
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-          // If profile creation fails, we should probably delete the auth user
-          await supabase.auth.admin.deleteUser(authData.user.id)
-          throw profileError
-        }
+        if (profileError) throw profileError
       }
-
-      router.push('/login?message=Check your email to confirm your account')
-    } catch (error) {
-      console.error('Error registering:', error)
-      alert('Registration failed. Please try again.')
+      setToast({ open: true, title: 'Success', description: 'Check your email to confirm your account.' })
+      setTimeout(() => router.push('/login?message=Check your email to confirm your account'), 1500)
+    } catch (error: any) {
+      setToast({ open: true, title: 'Registration failed', description: error.message || 'Please try again.' })
     } finally {
       setLoading(false)
     }
@@ -65,40 +61,41 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
+      <Toast open={toast.open} onOpenChange={o => setToast(t => ({ ...t, open: o }))} title={toast.title} description={toast.description} />
       <Card className="w-[350px]">
         <CardHeader>
           <CardTitle>Register</CardTitle>
           <CardDescription>Create a new account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Input
                 type="text"
                 placeholder="Full Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
+                {...register('fullName')}
+                disabled={loading}
               />
+              {errors.fullName && <p className="text-red-600 text-xs">{errors.fullName.message}</p>}
             </div>
             <div className="space-y-2">
               <Input
                 type="email"
                 placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                {...register('email')}
+                disabled={loading}
               />
+              {errors.email && <p className="text-red-600 text-xs">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Input
                 type="password"
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...register('password')}
+                disabled={loading}
                 minLength={6}
               />
+              {errors.password && <p className="text-red-600 text-xs">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Loading...' : 'Register'}

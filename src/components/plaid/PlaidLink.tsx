@@ -1,37 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
 export function PlaidLink() {
+  const [linkToken, setLinkToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
+  // Fetch link token on mount
+  useEffect(() => {
+    const fetchToken = async () => {
+      setLoading(true)
+      const response = await fetch('/api/plaid/create-link-token', { method: 'POST' })
+      const data = await response.json()
+      setLinkToken(data.linkToken)
+      setLoading(false)
+    }
+    fetchToken()
+  }, [])
+
   const { open, ready } = usePlaidLink({
-    token: null,
+    token: linkToken,
     onSuccess: async (public_token, metadata) => {
       try {
         setLoading(true)
-        
-        // Exchange public token for access token
-        const response = await fetch('/api/plaid/exchange-token', {
+        await fetch('/api/plaid/exchange-token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             public_token,
             institution_name: metadata.institution?.name,
           }),
         })
-
-        if (!response.ok) {
-          throw new Error('Failed to exchange token')
-        }
-
-        // Refresh the page to show the new connection
         window.location.reload()
       } catch (error) {
         console.error('Error exchanging token:', error)
@@ -41,25 +44,10 @@ export function PlaidLink() {
     },
   })
 
-  const handleClick = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/plaid/create-link-token', {
-        method: 'POST',
-      })
-      const { linkToken } = await response.json()
-      open(linkToken)
-    } catch (error) {
-      console.error('Error creating link token:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <Button
-      onClick={handleClick}
-      disabled={!ready || loading}
+      onClick={() => open()}
+      disabled={!ready || loading || !linkToken}
     >
       {loading ? 'Loading...' : 'Connect a Bank Account'}
     </Button>
