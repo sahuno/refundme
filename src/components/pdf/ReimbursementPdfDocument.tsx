@@ -1,6 +1,19 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 
-export function ReimbursementPdfDocument({ request, items }: { request: any, items: any[] }) {
+interface RequestPdf {
+  student_name: string
+  created_at: string
+  total_amount: number
+}
+
+interface ItemPdf {
+  date: string
+  description: string
+  category: string
+  amount: number
+}
+
+export function ReimbursementPdfDocument({ request, items }: { request: RequestPdf, items: ItemPdf[] }) {
   return (
     <Document>
       <Page size="A4" style={styles.body}>

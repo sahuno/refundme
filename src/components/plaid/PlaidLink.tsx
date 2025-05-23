@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
 
 export function PlaidLink() {
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   // Fetch link token on mount
   useEffect(() => {

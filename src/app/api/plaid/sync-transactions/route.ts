@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     })
     const plaidTransactions = response.data.transactions
     // Map to DB schema
-    const transactions = plaidTransactions.map((t: any) => ({
+    const transactions = plaidTransactions.map((t: Record<string, any>) => ({
       user_id: user.id,
       plaid_transaction_id: t.transaction_id,
       bank_connection_id,

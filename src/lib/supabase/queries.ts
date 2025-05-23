@@ -9,7 +9,7 @@ export async function fetchUserTransactions(userId: string) {
     .order('date', { ascending: false })
 }
 
-export async function insertTransactions(transactions: any[]) {
+export async function insertTransactions(transactions: Record<string, unknown>[]) {
   const supabase = createClient()
   return supabase
     .from('transactions')

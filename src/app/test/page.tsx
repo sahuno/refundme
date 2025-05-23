@@ -11,7 +11,7 @@ export default function TestPage() {
   useEffect(() => {
     async function testConnection() {
       try {
-        const { data, error } = await supabase.auth.getSession()
+        const { error } = await supabase.auth.getSession()
         if (error) throw error
         setStatus('success')
       } catch (err) {

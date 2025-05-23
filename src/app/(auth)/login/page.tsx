@@ -41,8 +41,9 @@ export default function LoginPage() {
         router.push('/dashboard')
         router.refresh()
       }, 1000)
-    } catch (error: any) {
-      setToast({ open: true, title: 'Login failed', description: error.message || 'Please try again.' })
+    } catch (error) {
+      const err = error as Error
+      setToast({ open: true, title: 'Login failed', description: err.message || 'Please try again.' })
     } finally {
       setLoading(false)
     }
@@ -85,7 +86,7 @@ export default function LoginPage() {
               {loading ? 'Loading...' : 'Login'}
             </Button>
             <p className="text-sm text-center">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/register" className="text-primary hover:underline">
                 Register
               </Link>
