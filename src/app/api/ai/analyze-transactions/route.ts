@@ -18,36 +18,39 @@ interface EligibleTransaction extends Transaction {
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 
 
-async function analyzeTransactionWithAI(transaction: Transaction): Promise<{ eligible: boolean; reason: string; confidence: number }> {
+async function analyzeBatchWithAI(transactions: Transaction[]): Promise<Array<{ eligible: boolean; reason: string; confidence: number }>> {
   if (!ANTHROPIC_API_KEY) {
     // Fallback to rule-based analysis if no API key
-    return analyzeTransactionRuleBased(transaction)
+    return transactions.map(analyzeTransactionRuleBased)
   }
 
   try {
+    // Create batch prompt for multiple transactions
+    const transactionList = transactions.map((t, i) => 
+      `${i + 1}. Description: ${t.description}, Merchant: ${t.merchant_name ?? 'Unknown'}, Category: ${t.category ?? 'Unknown'}, Amount: $${Math.abs(t.amount)}`
+    ).join('\n')
+
     const prompt = `
-Analyze this financial transaction for a graduate student reimbursement request. 
+Analyze these ${transactions.length} financial transactions for graduate student reimbursement eligibility.
 
-Transaction Details:
-- Description: ${transaction.description}
-- Merchant: ${transaction.merchant_name ?? 'Unknown'}
-- Category: ${transaction.category ?? 'Unknown'}
-- Amount: $${Math.abs(transaction.amount)}
-- Date: ${transaction.date}
+Transactions:
+${transactionList}
 
-Determine if this transaction is eligible for graduate student reimbursement based on these common categories:
+Eligible categories:
 - Books & Educational Materials
-- Research Supplies & Equipment
+- Research Supplies & Equipment  
 - Academic Software & Technology
 - Conference Fees & Academic Travel
 - Office Supplies for Academic Work
 
-Respond in JSON format:
-{
-  "eligible": boolean,
-  "reason": "Brief explanation of why this is/isn't eligible",
-  "confidence": number between 0-100
-}
+Respond with a JSON array with one object per transaction:
+[
+  {
+    "eligible": boolean,
+    "reason": "Brief explanation",
+    "confidence": number (0-100)
+  }
+]
 `
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -59,7 +62,7 @@ Respond in JSON format:
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 200,
+        max_tokens: 1000,
         messages: [{
           role: 'user',
           content: prompt
@@ -72,17 +75,26 @@ Respond in JSON format:
     }
 
     const data = await response.json()
-    const analysis = JSON.parse(data.content[0].text)
+    const content = data.content[0].text
     
-    return {
-      eligible: analysis.eligible,
-      reason: analysis.reason,
-      confidence: analysis.confidence
+    // Extract JSON array from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) {
+      throw new Error('No JSON array found in response')
     }
+    
+    const analyses = JSON.parse(jsonMatch[0])
+    
+    // Ensure we have the right number of results
+    if (analyses.length !== transactions.length) {
+      throw new Error('Mismatch in analysis results count')
+    }
+    
+    return analyses
   } catch (error) {
-    console.error('AI analysis failed:', error)
-    // Fallback to rule-based analysis
-    return analyzeTransactionRuleBased(transaction)
+    console.error('Batch AI analysis failed:', error)
+    // Fallback to rule-based analysis for all
+    return transactions.map(analyzeTransactionRuleBased)
   }
 }
 
@@ -161,11 +173,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
     }
 
-    // Analyze each transaction
+    // Analyze all transactions in batch for better performance
+    const analyses = await analyzeBatchWithAI(transactions)
+    
     const eligibleTransactions: EligibleTransaction[] = []
     
-    for (const transaction of transactions) {
-      const analysis = await analyzeTransactionWithAI(transaction)
+    transactions.forEach((transaction, index) => {
+      const analysis = analyses[index]
       
       if (analysis.eligible) {
         eligibleTransactions.push({
@@ -174,7 +188,7 @@ export async function POST(req: Request) {
           confidence_score: analysis.confidence
         })
       }
-    }
+    })
 
     return NextResponse.json({
       eligible_transactions: eligibleTransactions,

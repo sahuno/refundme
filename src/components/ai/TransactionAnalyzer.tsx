@@ -123,6 +123,15 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
                 </>
               )}
             </Button>
+            
+            {analyzing && (
+              <div className="mt-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <span>Processing with AI... This may take 10-15 seconds</span>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

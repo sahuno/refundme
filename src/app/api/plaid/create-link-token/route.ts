@@ -6,8 +6,9 @@ import { CountryCode, Products } from 'plaid'
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerComponentClient({ 
+      cookies: () => cookies()
+    });
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

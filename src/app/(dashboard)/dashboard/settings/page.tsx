@@ -321,7 +321,7 @@ export default function SettingsPage() {
                           Connected on {new Date(connection.created_at).toLocaleDateString()}
                           {connection.last_synced && (
                             <span className="ml-2">
-                              • Last sync: {new Date(connection.last_synced).toLocaleDateString()}
+                              • Last sync: {new Date(connection.last_synced).toLocaleString()}
                             </span>
                           )}
                         </p>
