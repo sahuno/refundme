@@ -12,10 +12,25 @@ export function PlaidLink() {
   useEffect(() => {
     const fetchToken = async () => {
       setLoading(true)
-      const response = await fetch('/api/plaid/create-link-token', { method: 'POST' })
-      const data = await response.json()
-      setLinkToken(data.linkToken)
-      setLoading(false)
+      try {
+        console.log('Fetching Plaid link token...')
+        const response = await fetch('/api/plaid/create-link-token', { method: 'POST' })
+        console.log('Link token response status:', response.status)
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Link token error:', errorText)
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const data = await response.json()
+        console.log('Link token received:', data.linkToken ? 'Success' : 'Failed')
+        setLinkToken(data.linkToken)
+      } catch (error) {
+        console.error('Failed to fetch link token:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchToken()
   }, [])
@@ -25,7 +40,9 @@ export function PlaidLink() {
     onSuccess: async (public_token, metadata) => {
       try {
         setLoading(true)
-        await fetch('/api/plaid/exchange-token', {
+        console.log('Exchanging token for institution:', metadata.institution?.name)
+        
+        const response = await fetch('/api/plaid/exchange-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -33,21 +50,53 @@ export function PlaidLink() {
             institution_name: metadata.institution?.name,
           }),
         })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Token exchange error:', errorText)
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        console.log('Token exchange result:', result)
+        
         window.location.reload()
       } catch (error) {
         console.error('Error exchanging token:', error)
+        alert('Failed to connect bank account. Please try again.')
       } finally {
         setLoading(false)
       }
     },
+    onExit: (err, metadata) => {
+      if (err) {
+        console.error('Plaid Link error:', err)
+      }
+      console.log('Plaid Link exit:', metadata)
+    },
   })
+
+  const getButtonText = () => {
+    if (loading) return 'Loading...'
+    if (!linkToken) return 'Setting up...'
+    if (!ready) return 'Preparing...'
+    return 'Connect a Bank Account'
+  }
+
+  const isDisabled = !ready || loading || !linkToken
 
   return (
     <Button
-      onClick={() => open()}
-      disabled={!ready || loading || !linkToken}
+      onClick={() => {
+        console.log('Connect button clicked - Ready:', ready, 'Token:', !!linkToken)
+        if (ready && linkToken) {
+          open()
+        }
+      }}
+      disabled={isDisabled}
+      className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400"
     >
-      {loading ? 'Loading...' : 'Connect a Bank Account'}
+      {getButtonText()}
     </Button>
   )
 } 
