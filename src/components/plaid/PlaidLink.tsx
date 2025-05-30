@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button'
 export function PlaidLink() {
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  
+  // Debug: Log component mount
+  console.log('PlaidLink component mounted')
 
   // Fetch link token on mount
   useEffect(() => {
@@ -35,6 +38,8 @@ export function PlaidLink() {
     fetchToken()
   }, [])
 
+  console.log('PlaidLink state:', { linkToken: !!linkToken, loading })
+  
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: async (public_token, metadata) => {
