@@ -93,12 +93,17 @@ export default function RequestsPage() {
       const result = await response.json()
 
       if (response.ok) {
+        let description = 'Your request has been submitted successfully.'
+        if (result.email_sent) {
+          description = result.using_custom_admin 
+            ? `Your request has been submitted and your department admin (${result.admin_email}) has been notified via email.`
+            : 'Your request has been submitted and the system admin has been notified via email.'
+        }
+        
         setToast({
           open: true,
           title: 'Request Submitted!',
-          description: result.email_sent 
-            ? 'Your request has been submitted and admin notified via email.'
-            : 'Your request has been submitted successfully.'
+          description
         })
         
         // Refresh the requests

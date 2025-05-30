@@ -31,6 +31,9 @@ export default function DashboardLayout({
             <Button variant="ghost" onClick={() => router.push('/dashboard/requests')}>
               Requests
             </Button>
+            <Button variant="ghost" onClick={() => router.push('/dashboard/settings')}>
+              Settings
+            </Button>
           </div>
           <div className="ml-auto">
             <Button variant="ghost" onClick={handleLogout}>

@@ -54,19 +54,23 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6 bg-white text-gray-900 min-h-screen">
+    <div className="space-y-6 bg-white text-gray-900 min-h-screen p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Transactions</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
         <div className="space-x-2">
           <Button
             onClick={() => setShowAIAnalyzer(!showAIAnalyzer)}
             variant="outline"
             disabled={transactions.length === 0}
+            className="bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
           >
             🤖 AI Analysis
           </Button>
           {selected.length > 0 && (
-            <Button onClick={handleCreateRequest}>
+            <Button 
+              onClick={handleCreateRequest}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
               Create Request ({selected.length})
             </Button>
           )}

@@ -17,6 +17,7 @@ export interface Database {
           role: 'student' | 'administrator' | 'accountant'
           department: string | null
           student_id: string | null
+          admin_email: string | null
           created_at: string
         }
         Insert: {
@@ -26,6 +27,7 @@ export interface Database {
           role?: 'student' | 'administrator' | 'accountant'
           department?: string | null
           student_id?: string | null
+          admin_email?: string | null
           created_at?: string
         }
         Update: {
@@ -35,6 +37,7 @@ export interface Database {
           role?: 'student' | 'administrator' | 'accountant'
           department?: string | null
           student_id?: string | null
+          admin_email?: string | null
           created_at?: string
         }
       }

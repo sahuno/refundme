@@ -10,6 +10,8 @@ A modern web application for graduate students to manage and request reimburseme
 - **📄 PDF Generation**: Generate professional reimbursement request documents
 - **📊 Dashboard**: Track transactions, requests, and reimbursement status
 - **💳 Manual Entry**: Add expenses not captured by bank connections
+- **⚙️ Custom Admin Settings**: Each user can set their department's admin email for notifications
+- **📧 Smart Email Routing**: Requests automatically sent to the appropriate department admin
 
 ## AI-Powered Features
 
@@ -100,6 +102,7 @@ npm run dev
 
 ### 1. Account Setup
 - Register for an account or log in
+- Go to Settings to configure your profile and admin email
 - Connect your bank account via Plaid
 
 ### 2. Transaction Management
@@ -117,6 +120,11 @@ npm run dev
 - Monitor request status
 - Download generated PDFs
 - View reimbursement history
+
+### 5. Admin Email Configuration
+- In Settings, set your department admin's email address
+- All reimbursement requests will be sent to this email
+- If no admin email is set, requests go to the system default admin
 
 ## AI Transaction Analysis
 

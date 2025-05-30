@@ -91,16 +91,16 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white border border-gray-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-gray-900">
           🤖 AI Transaction Analyzer
-          <span className="text-sm font-normal text-gray-500">
+          <span className="text-sm font-normal text-gray-600">
             Powered by Claude AI
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 bg-white">
         {!showResults ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600">
@@ -110,7 +110,7 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
             <Button 
               onClick={analyzeTransactions} 
               disabled={analyzing || transactions.length === 0}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
             >
               {analyzing ? (
                 <>
@@ -127,20 +127,21 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
         ) : (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold">
+              <h3 className="font-semibold text-gray-900">
                 Found {eligibleTransactions.length} eligible transactions
               </h3>
               <Button
                 onClick={() => setShowResults(false)}
                 variant="outline"
                 size="sm"
+                className="bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
               >
                 Analyze Again
               </Button>
             </div>
 
             {eligibleTransactions.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-gray-600 text-center py-4">
                 No eligible transactions found. Try adjusting your transaction selection or add manual items.
               </p>
             ) : (
@@ -165,7 +166,7 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
                               onChange={() => toggleSelection(transaction.id)}
                               className="rounded"
                             />
-                            <span className="font-medium">{transaction.description}</span>
+                            <span className="font-medium text-gray-900">{transaction.description}</span>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             {transaction.merchant_name ? `${transaction.merchant_name} • ` : ''}
@@ -195,6 +196,7 @@ export function TransactionAnalyzer({ transactions, onEligibleSelected }: Transa
                   <Button
                     onClick={handleSelectEligible}
                     disabled={selectedIds.size === 0}
+                    className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     Add {selectedIds.size} Transactions to Request
                   </Button>

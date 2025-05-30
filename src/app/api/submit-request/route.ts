@@ -5,6 +5,8 @@ interface RequestSubmissionData {
   request_id: string
   student_name: string
   total_amount: number
+  admin_email: string
+  department?: string
   items: Array<{
     description: string
     amount: number
@@ -15,7 +17,7 @@ interface RequestSubmissionData {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@university.edu'
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@refundme.app'
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 
 async function sendSubmissionEmail(data: RequestSubmissionData) {
   if (!RESEND_API_KEY) {
@@ -40,6 +42,7 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Request Details</h3>
           <p><strong>Student:</strong> ${data.student_name}</p>
+          ${data.department ? `<p><strong>Department:</strong> ${data.department}</p>` : ''}
           <p><strong>Request ID:</strong> ${data.request_id}</p>
           <p><strong>Total Amount:</strong> $${data.total_amount.toFixed(2)}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
@@ -75,8 +78,8 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
       },
       body: JSON.stringify({
         from: FROM_EMAIL,
-        to: [ADMIN_EMAIL],
-        subject: `New Reimbursement Request from ${data.student_name} - $${data.total_amount.toFixed(2)}`,
+        to: [data.admin_email],
+        subject: `New Reimbursement Request from ${data.student_name}${data.department ? ` (${data.department})` : ''} - $${data.total_amount.toFixed(2)}`,
         html: emailHtml,
       }),
     })
@@ -121,10 +124,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Request not found' }, { status: 404 })
     }
 
-    // Get user profile for student name
+    // Get user profile for student name and admin email
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, admin_email, department')
       .eq('id', user.id)
       .single()
 
@@ -151,19 +154,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to update request status' }, { status: 500 })
     }
 
+    // Determine which admin email to use
+    const adminEmail = profile?.admin_email || ADMIN_EMAIL
+    
     // Send email notification
     const emailResult = await sendSubmissionEmail({
       request_id,
       student_name: profile?.full_name || 'Unknown Student',
       total_amount: request.total_amount,
-      items: items || []
+      items: items || [],
+      admin_email: adminEmail,
+      department: profile?.department
     })
 
     return NextResponse.json({
       success: true,
       message: 'Request submitted successfully',
       email_sent: emailResult.success,
-      email_error: emailResult.success ? null : emailResult.error
+      email_error: emailResult.success ? null : emailResult.error,
+      admin_email: adminEmail,
+      using_custom_admin: !!profile?.admin_email
     })
 
   } catch (error) {
