@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Toast } from '@/components/ui/toast'
+import { ReceiptUpload } from '@/components/receipt/ReceiptUpload'
 
 interface TransactionItem {
   id: string
@@ -21,6 +22,19 @@ interface ManualItem {
   amount: number
   date: string
   category: string
+}
+
+interface ReceiptData {
+  merchant_name: string
+  total_amount: number
+  date: string
+  items: Array<{
+    description: string
+    amount: number
+    category: string
+  }>
+  tax_amount?: number
+  receipt_confidence: number
 }
 
 function NewRequestContent() {
@@ -71,6 +85,24 @@ function NewRequestContent() {
     if (!manual.description || !manual.amount || !manual.date || !manual.category) return
     setManualItems((prev) => [...prev, manual])
     setManual({ description: '', amount: 0, date: '', category: '' })
+  }
+
+  const handleReceiptAnalyzed = (receiptData: ReceiptData) => {
+    // Add all receipt items to manual items
+    const newItems = receiptData.items.map(item => ({
+      description: `${receiptData.merchant_name} - ${item.description}`,
+      amount: item.amount,
+      date: receiptData.date,
+      category: item.category
+    }))
+    
+    setManualItems((prev) => [...prev, ...newItems])
+    
+    setToast({
+      open: true,
+      title: 'Receipt Items Added!',
+      description: `Added ${newItems.length} items from ${receiptData.merchant_name} (${receiptData.receipt_confidence}% confidence)`
+    })
   }
 
   const total = [...txItems, ...manualItems].reduce((sum, item) => sum + Number(item.amount), 0)
@@ -238,6 +270,16 @@ function NewRequestContent() {
               </tbody>
             </table>
           )}
+        </CardContent>
+      </Card>
+
+      <ReceiptUpload onReceiptAnalyzed={handleReceiptAnalyzed} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-gray-900">Manual Entry</CardTitle>
+        </CardHeader>
+        <CardContent className="bg-white">
           <div className="mb-4">
             <h2 className="font-semibold mb-2 text-gray-900">Add Manual Item</h2>
             <div className="flex gap-2 mb-2">

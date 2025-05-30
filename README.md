@@ -186,6 +186,26 @@ For other platforms, ensure:
 4. Run tests and linting
 5. Submit a pull request
 
+Features:
+* automatically finds eligible transactions
+* email request to designated payee
+* generate pdf's of request
+
+Upcoming
+* ios app
+* attach tax forms & supporting documents
+
+
+upcoming
+1. ios app
+2. file by:  receipts , receipts + bank staements 
+(option to pull receipts from retailers), pull from photos
+1. periodically alerts you to file for reimbuerment
+2. customn email to admins
+   
+major features
+fill tax/vendors forms
+
 ## License
 
 This project is licensed under the MIT License.

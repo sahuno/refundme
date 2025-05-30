@@ -16,6 +16,13 @@ interface Profile {
   admin_email?: string
 }
 
+interface BankConnection {
+  id: string
+  institution_name: string
+  last_synced: string | null
+  created_at: string
+}
+
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [formData, setFormData] = useState({
@@ -26,15 +33,18 @@ export default function SettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [bankConnections, setBankConnections] = useState<BankConnection[]>([])
+  const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
   const supabase = createClient()
 
   useEffect(() => {
-    async function fetchProfile() {
+    async function fetchData() {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Fetch profile
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
@@ -50,9 +60,21 @@ export default function SettingsPage() {
           admin_email: profileData.admin_email || ''
         })
       }
+
+      // Fetch bank connections
+      const { data: connectionsData } = await supabase
+        .from('bank_connections')
+        .select('id, institution_name, last_synced, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (connectionsData) {
+        setBankConnections(connectionsData)
+      }
+
       setLoading(false)
     }
-    fetchProfile()
+    fetchData()
   }, [supabase])
 
   const handleSave = async () => {
@@ -92,6 +114,51 @@ export default function SettingsPage() {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDisconnectBank = async (connectionId: string, institutionName: string) => {
+    if (!confirm(`Are you sure you want to disconnect ${institutionName}? This will delete all associated transactions.`)) {
+      return
+    }
+
+    setDisconnecting(connectionId)
+    try {
+      const response = await fetch('/api/plaid/disconnect-bank', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          connection_id: connectionId
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setBankConnections(prev => prev.filter(conn => conn.id !== connectionId))
+        setToast({
+          open: true,
+          title: 'Bank Disconnected',
+          description: `${institutionName} has been disconnected successfully`
+        })
+      } else {
+        setToast({
+          open: true,
+          title: 'Disconnection Failed',
+          description: result.error || 'Failed to disconnect bank account'
+        })
+      }
+    } catch (error) {
+      console.error('Bank disconnection error:', error)
+      setToast({
+        open: true,
+        title: 'Error',
+        description: 'Network error occurred while disconnecting bank'
+      })
+    } finally {
+      setDisconnecting(null)
     }
   }
 
@@ -205,6 +272,83 @@ export default function SettingsPage() {
                   <p className="mt-1">
                     When you submit a reimbursement request, an email notification will be sent to this admin email address. 
                     This ensures your department&apos;s financial officer gets notified immediately and can process your request quickly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6 bg-white border border-gray-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              🏦 Bank Connections
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 bg-white">
+            {bankConnections.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">🏦</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Bank Accounts Connected</h3>
+                <p className="text-gray-600 mb-4">
+                  Connect your bank account to automatically sync transactions and identify eligible expenses.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Go to the Transactions page to connect your first bank account.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-gray-600">
+                  Manage your connected bank accounts. Disconnecting will remove all associated transactions.
+                </p>
+                {bankConnections.map((connection) => (
+                  <div
+                    key={connection.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-medium">
+                          {connection.institution_name?.charAt(0)?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {connection.institution_name || 'Unknown Bank'}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          Connected on {new Date(connection.created_at).toLocaleDateString()}
+                          {connection.last_synced && (
+                            <span className="ml-2">
+                              • Last sync: {new Date(connection.last_synced).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDisconnectBank(connection.id, connection.institution_name)}
+                      disabled={disconnecting === connection.id}
+                      className="bg-white text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
+                    >
+                      {disconnecting === connection.id ? 'Disconnecting...' : 'Disconnect'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <span className="text-yellow-600">⚠️</span>
+                <div className="text-sm">
+                  <strong>Important:</strong>
+                  <p className="mt-1 text-gray-700">
+                    Disconnecting a bank account will permanently delete all associated transactions. 
+                    Make sure to submit any pending reimbursement requests before disconnecting.
                   </p>
                 </div>
               </div>
