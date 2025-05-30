@@ -201,7 +201,7 @@ function NewRequestContent() {
       } else {
         setToast({ open: true, title: 'Submission Error', description: result.error || 'Failed to submit request.' })
       }
-    } catch (error) {
+    } catch {
       setToast({ open: true, title: 'Network Error', description: 'Failed to submit request. Please try again.' })
     }
     
