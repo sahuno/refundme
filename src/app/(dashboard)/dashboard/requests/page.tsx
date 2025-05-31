@@ -139,43 +139,90 @@ export default function RequestsPage() {
           ) : requests.length === 0 ? (
             <p>No requests found.</p>
           ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((req) => (
-                  <tr key={req.id}>
-                    <td>{new Date(req.created_at).toLocaleDateString()}</td>
-                    <td>${req.total_amount.toFixed(2)}</td>
-                    <td>{req.status}</td>
-                    <td>
-                      {req.status === 'draft' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleSubmit(req.id)}
-                          disabled={submitting === req.id}
-                          className="mr-2"
+            <div className="space-y-4">
+              {requests.map((req) => (
+                <Card key={req.id} className="bg-gray-50 border border-gray-200">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">
+                          Request #{req.id.slice(0, 8)}...
+                        </CardTitle>
+                        <p className="text-sm text-gray-600">
+                          Submitted: {new Date(req.created_at).toLocaleDateString()} • 
+                          Total: ${req.total_amount.toFixed(2)} • 
+                          Status: <span className={`font-medium ${req.status === 'submitted' ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {req.status}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {req.status === 'draft' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleSubmit(req.id)}
+                            disabled={submitting === req.id}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {submitting === req.id ? 'Submitting...' : 'Submit'}
+                          </Button>
+                        )}
+                        <PDFDownloadLink
+                          document={<ReimbursementPdfDocument request={req} items={requestItems[req.id] || []} />}
+                          fileName={`reimbursement-request-${req.id}.pdf`}
                         >
-                          {submitting === req.id ? 'Submitting...' : 'Submit'}
-                        </Button>
+                          {({ loading }) => (
+                            <Button size="sm" variant="outline" disabled={loading}>
+                              {loading ? 'Generating...' : 'Download PDF'}
+                            </Button>
+                          )}
+                        </PDFDownloadLink>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {req.notes && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-sm text-gray-700"><strong>Notes:</strong> {req.notes}</p>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-900">Expense Items:</h4>
+                      {(requestItems[req.id] || []).length === 0 ? (
+                        <p className="text-sm text-gray-500 italic">No items found for this request.</p>
+                      ) : (
+                        <div className="bg-white rounded border">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="bg-gray-100">
+                                <th className="text-left p-3 font-medium text-gray-900">Date</th>
+                                <th className="text-left p-3 font-medium text-gray-900">Description</th>
+                                <th className="text-left p-3 font-medium text-gray-900">Category</th>
+                                <th className="text-left p-3 font-medium text-gray-900">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(requestItems[req.id] || []).map((item, i) => (
+                                <tr key={i} className="border-t border-gray-100">
+                                  <td className="p-3 text-gray-800">{item.date}</td>
+                                  <td className="p-3 text-gray-800">{item.description}</td>
+                                  <td className="p-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      {item.category}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-gray-800 font-medium">${item.amount.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
-                      <PDFDownloadLink
-                        document={<ReimbursementPdfDocument request={req} items={requestItems[req.id] || []} />}
-                        fileName={`reimbursement-request-${req.id}.pdf`}
-                      >
-                        {({ loading }) => loading ? 'Generating...' : 'Generate PDF'}
-                      </PDFDownloadLink>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

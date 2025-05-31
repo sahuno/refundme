@@ -44,6 +44,17 @@ function NewRequestContent() {
   const [txItems, setTxItems] = useState<TransactionItem[]>([])
   const [manualItems, setManualItems] = useState<ManualItem[]>([])
   const [manual, setManual] = useState<ManualItem>({ description: '', amount: 0, date: '', category: '' })
+  
+  // Predefined categories for expense items
+  const expenseCategories = [
+    'Books & Educational Materials',
+    'Research Supplies & Equipment', 
+    'Academic Software & Technology',
+    'Conference Fees & Academic Travel',
+    'Office Supplies for Academic Work',
+    'Food & Dining',
+    'Other'
+  ]
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
@@ -264,7 +275,15 @@ function NewRequestContent() {
                     <td className="text-gray-800 px-4 py-2">{tx.date}</td>
                     <td className="text-gray-800 px-4 py-2">{tx.description}</td>
                     <td className="text-gray-800 px-4 py-2">${tx.amount.toFixed(2)}</td>
-                    <td className="text-gray-800 px-4 py-2">{tx.category}</td>
+                    <td className="text-gray-800 px-4 py-2">
+                      {tx.category ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {tx.category}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No category</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -282,12 +301,46 @@ function NewRequestContent() {
         <CardContent className="bg-white">
           <div className="mb-4">
             <h2 className="font-semibold mb-2 text-gray-900">Add Manual Item</h2>
-            <div className="flex gap-2 mb-2">
-              <Input placeholder="Description" value={manual.description} onChange={e => setManual({ ...manual, description: e.target.value })} className="bg-white text-gray-900 border-gray-300" />
-              <Input placeholder="Amount" type="number" value={manual.amount} onChange={e => setManual({ ...manual, amount: Number(e.target.value) })} className="bg-white text-gray-900 border-gray-300" />
-              <Input placeholder="Date" type="date" value={manual.date} onChange={e => setManual({ ...manual, date: e.target.value })} className="bg-white text-gray-900 border-gray-300" />
-              <Input placeholder="Category" value={manual.category} onChange={e => setManual({ ...manual, category: e.target.value })} className="bg-white text-gray-900 border-gray-300" />
-              <Button type="button" onClick={handleAddManual} className="bg-blue-600 hover:bg-blue-700 text-white">Add</Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 mb-2">
+              <Input 
+                placeholder="Description" 
+                value={manual.description} 
+                onChange={e => setManual({ ...manual, description: e.target.value })} 
+                className="bg-white text-gray-900 border-gray-300" 
+              />
+              <Input 
+                placeholder="Amount" 
+                type="number" 
+                step="0.01"
+                value={manual.amount} 
+                onChange={e => setManual({ ...manual, amount: Number(e.target.value) })} 
+                className="bg-white text-gray-900 border-gray-300" 
+              />
+              <Input 
+                placeholder="Date" 
+                type="date" 
+                value={manual.date} 
+                onChange={e => setManual({ ...manual, date: e.target.value })} 
+                className="bg-white text-gray-900 border-gray-300" 
+              />
+              <select 
+                value={manual.category} 
+                onChange={e => setManual({ ...manual, category: e.target.value })}
+                className="px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select category...</option>
+                {expenseCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <Button 
+                type="button" 
+                onClick={handleAddManual} 
+                disabled={!manual.description || !manual.amount || !manual.date || !manual.category}
+                className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400"
+              >
+                Add
+              </Button>
             </div>
             {manualItems.length > 0 && (
               <table className="min-w-full text-sm bg-white">
@@ -305,7 +358,11 @@ function NewRequestContent() {
                       <td className="text-gray-800 px-4 py-2">{item.date}</td>
                       <td className="text-gray-800 px-4 py-2">{item.description}</td>
                       <td className="text-gray-800 px-4 py-2">${item.amount.toFixed(2)}</td>
-                      <td className="text-gray-800 px-4 py-2">{item.category}</td>
+                      <td className="text-gray-800 px-4 py-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {item.category}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
