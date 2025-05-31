@@ -124,7 +124,7 @@ export default function DashboardPage() {
                     }
                   } catch (error) {
                     console.error('Direct API test failed:', error)
-                    alert(`Network Error: ${error.message}`)
+                    alert(`Network Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
                   }
                 }}
               >
