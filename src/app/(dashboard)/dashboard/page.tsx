@@ -114,10 +114,17 @@ export default function DashboardPage() {
                     const response = await fetch('/api/plaid/create-link-token', { method: 'POST' })
                     const data = await response.json()
                     console.log('Direct API test result:', data)
-                    alert(`API Test: ${response.ok ? 'Success' : 'Failed'} - Check console for details`)
+                    console.log('Response status:', response.status)
+                    console.log('Response ok:', response.ok)
+                    
+                    if (!response.ok) {
+                      alert(`API Failed (${response.status}): ${data.error || 'Unknown error'}`)
+                    } else {
+                      alert(`API Success: Got link token`)
+                    }
                   } catch (error) {
                     console.error('Direct API test failed:', error)
-                    alert('API Test Failed - Check console')
+                    alert(`Network Error: ${error.message}`)
                   }
                 }}
               >

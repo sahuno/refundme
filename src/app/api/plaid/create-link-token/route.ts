@@ -6,15 +6,19 @@ import { CountryCode, Products } from 'plaid'
 
 export async function POST() {
   try {
+    console.log('Link token API called')
     const supabase = createServerComponentClient({ 
       cookies: () => cookies()
     });
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('User check:', { user: !!user, error: userError?.message })
+    
     if (userError || !user) {
+      console.log('Authentication failed:', userError?.message)
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Please log in' },
         { status: 401 }
       )
     }
