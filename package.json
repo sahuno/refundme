@@ -1,12 +1,17 @@
 {
-  "name": "refundme",
+  "name": "refundme-monorepo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:web": "next dev",
+    "dev:ios": "echo 'Open ios/RefundMe.xcodeproj in Xcode to run iOS app'",
     "build": "next build",
+    "build:web": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "echo 'Run tests in Xcode for iOS app'",
+    "deploy:web": "vercel --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

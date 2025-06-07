@@ -1,6 +1,13 @@
-# RefundMe - Graduate Student Expense Reimbursement System
+# RefundMe - Graduate Student Expense Reimbursement System (Monorepo)
 
-A modern web application for graduate students to manage and request reimbursements for eligible expenses, featuring AI-powered transaction analysis.
+A modern monorepo containing both web and iOS applications for graduate students to manage and request reimbursements for eligible expenses, featuring AI-powered transaction analysis.
+
+## 📱 Platforms
+
+- **Web App** (`/src`): Next.js 15 web application
+- **iOS App** (`/ios`): Native SwiftUI iOS application
+
+Both apps share the same backend infrastructure and Supabase database.
 
 ## Features
 
@@ -43,11 +50,17 @@ The app uses Claude AI to analyze transactions and identify eligible expenses ba
 
 ### Prerequisites
 
+**For Web App:**
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
 - Plaid developer account
 - Anthropic API key (optional, for AI features)
+
+**For iOS App:**
+- Xcode 15.0+
+- iOS 16.0+ target
+- macOS 13.0+ (for development)
 
 ### Installation
 
@@ -57,7 +70,7 @@ git clone <repository-url>
 cd refundme
 ```
 
-2. Install dependencies:
+2. Install web dependencies:
 ```bash
 npm install
 ```
@@ -80,10 +93,21 @@ npx supabase db push
 
 5. Run the development server:
 ```bash
-npm run dev
+npm run dev:web
 ```
 
 6. Open [http://localhost:3000](http://localhost:3000)
+
+### iOS App Setup
+
+See the detailed setup instructions in [`ios/README.md`](ios/README.md).
+
+Quick setup:
+1. Open `ios/RefundMe.xcodeproj` in Xcode (you'll need to create this project first)
+2. Add Swift Package dependencies (Supabase, Plaid)
+3. Copy all Swift files from `ios/RefundMe/` into your Xcode project
+4. Update `ios/RefundMe/Config/Environment.swift` with your API URLs
+5. Build and run
 
 ## Environment Variables
 
@@ -149,34 +173,105 @@ The app uses these main tables:
 
 ## Development
 
-### Build
+### Web App Development
+
+**Build:**
 ```bash
-npm run build
+npm run build:web
 ```
 
-### Lint
+**Lint:**
 ```bash
 npm run lint
 ```
 
-### Type Check
+**Type Check:**
 ```bash
 npx tsc --noEmit
 ```
 
+**Development:**
+```bash
+npm run dev:web
+```
+
+### iOS App Development
+
+**Open in Xcode:**
+```bash
+npm run dev:ios
+# Or manually: open ios/RefundMe.xcodeproj
+```
+
+**Build and Test:**
+- Use Xcode's build system (⌘+B)
+- Run tests with ⌘+U
+- Run on simulator or device with ⌘+R
+
+### Full Stack Development
+
+To develop both apps simultaneously:
+
+1. **Terminal 1 - Web App:**
+```bash
+npm run dev:web
+```
+
+2. **Terminal 2 - iOS App:**
+```bash
+npm run dev:ios
+```
+
+3. Update `ios/RefundMe/Config/Environment.swift` for local development:
+```swift
+static let apiBaseURL = "http://localhost:3000/api"
+static let mobileAPIBaseURL = "http://localhost:3000/api/mobile"
+```
+
 ## Deployment
 
-This app is designed to deploy on Vercel:
+### Web App Deployment
+
+Deploy on Vercel:
 
 1. Connect your GitHub repository to Vercel
 2. Add environment variables in Vercel dashboard
-3. Deploy
+3. Deploy using:
+```bash
+npm run deploy:web
+```
 
 For other platforms, ensure:
 - Node.js 18+ runtime
 - Environment variables are configured
-- Build command: `npm run build`
+- Build command: `npm run build:web`
 - Start command: `npm start`
+
+### iOS App Deployment
+
+For App Store deployment:
+
+1. Update `ios/RefundMe/Config/Environment.swift` with production URLs
+2. Archive the app in Xcode (Product → Archive)
+3. Upload to App Store Connect
+4. Submit for App Store review
+
+### Production Configuration
+
+**Web App (Vercel):**
+- Set all environment variables in Vercel dashboard
+- Ensure mobile API endpoints are accessible
+- Test CORS configuration
+
+**iOS App:**
+```swift
+// Production Environment.swift
+static let supabaseURL = "YOUR_PRODUCTION_SUPABASE_URL"
+static let supabaseAnonKey = "YOUR_PRODUCTION_SUPABASE_ANON_KEY"
+static let apiBaseURL = "https://your-refundme-app.vercel.app/api"
+static let mobileAPIBaseURL = "https://your-refundme-app.vercel.app/api/mobile"
+static let plaidEnvironment = "production"
+```
 
 ## Contributing
 
