@@ -30,6 +30,8 @@ export default function RequestsPage() {
   const [requestItems, setRequestItems] = useState<Record<string, RequestItem[]>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [toast, setToast] = useState<{ open: boolean; title: string; description?: string }>({ open: false, title: '', description: '' })
   const supabase = createClient()
 
@@ -63,12 +65,15 @@ export default function RequestsPage() {
         // Fetch items for each request
         const itemsMap: Record<string, RequestItem[]> = {}
         for (const request of requestsData) {
-          const { data: items } = await supabase
+          const { data: items, error: itemsError } = await supabase
             .from('reimbursement_items')
             .select('*')
             .eq('request_id', request.id)
           
-          if (items) {
+          if (itemsError) {
+            console.error(`Error fetching items for request ${request.id}:`, itemsError)
+          } else if (items) {
+            console.log(`Found ${items.length} items for request ${request.id}`)
             itemsMap[request.id] = items
           }
         }
@@ -78,6 +83,45 @@ export default function RequestsPage() {
     }
     fetchRequests()
   }, [supabase])
+
+  const handleDelete = async (id: string) => {
+    setDeleting(id)
+    try {
+      const response = await fetch(`/api/requests/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setToast({
+          open: true,
+          title: 'Request Deleted',
+          description: 'The draft request has been deleted successfully.'
+        })
+        
+        // Remove from local state
+        setRequests(prev => prev.filter(req => req.id !== id))
+        const newRequestItems = { ...requestItems }
+        delete newRequestItems[id]
+        setRequestItems(newRequestItems)
+      } else {
+        const result = await response.json()
+        setToast({
+          open: true,
+          title: 'Delete Failed',
+          description: result.error || 'Failed to delete request'
+        })
+      }
+    } catch {
+      setToast({
+        open: true,
+        title: 'Error',
+        description: 'Network error occurred while deleting request'
+      })
+    } finally {
+      setDeleting(null)
+      setConfirmDelete(null)
+    }
+  }
 
   const handleSubmit = async (id: string) => {
     setSubmitting(id)
@@ -158,14 +202,25 @@ export default function RequestsPage() {
                       </div>
                       <div className="flex gap-2">
                         {req.status === 'draft' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleSubmit(req.id)}
-                            disabled={submitting === req.id}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            {submitting === req.id ? 'Submitting...' : 'Submit'}
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleSubmit(req.id)}
+                              disabled={submitting === req.id}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              {submitting === req.id ? 'Submitting...' : 'Submit'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setConfirmDelete(req.id)}
+                              disabled={deleting === req.id}
+                              className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                            >
+                              {deleting === req.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          </>
                         )}
                         <PDFDownloadLink
                           document={<ReimbursementPdfDocument request={req} items={requestItems[req.id] || []} />}
@@ -232,6 +287,37 @@ export default function RequestsPage() {
         title={toast.title} 
         description={toast.description} 
       />
+      
+      {/* Delete Confirmation Dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4 bg-white">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Confirm Delete</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 bg-white">
+              <p className="text-gray-800">Are you sure you want to delete this draft request?</p>
+              <p className="text-sm text-gray-600">This action cannot be undone. All expense items associated with this request will also be deleted.</p>
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setConfirmDelete(null)}
+                  className="bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => handleDelete(confirmDelete)}
+                  disabled={deleting === confirmDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {deleting === confirmDelete ? 'Deleting...' : 'Delete Request'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 } 

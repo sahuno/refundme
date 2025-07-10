@@ -42,6 +42,9 @@ function NewRequestContent() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const [txItems, setTxItems] = useState<TransactionItem[]>([])
+  const [editingCategory, setEditingCategory] = useState<{ id: string; category: string } | null>(null)
+  const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set())
+  const [selectedManualIndices, setSelectedManualIndices] = useState<Set<number>>(new Set())
   const [manualItems, setManualItems] = useState<ManualItem[]>([])
   const [manual, setManual] = useState<ManualItem>({ description: '', amount: 0, date: '', category: '' })
   
@@ -143,7 +146,7 @@ function NewRequestContent() {
         request_id: req.id,
         transaction_id: t.id,
         amount: t.amount,
-        category: t.category || '',
+        category: t.category || 'Other',
         description: t.description,
         date: t.date,
         is_manual_entry: false,
@@ -158,10 +161,12 @@ function NewRequestContent() {
         is_manual_entry: true,
       })),
     ]
+    console.log('Creating items:', items)
     const { error: itemsError } = await supabase.from('reimbursement_items').insert(items)
     setLoading(false)
     if (itemsError) {
-      setToast({ open: true, title: 'Error', description: 'Error saving items.' })
+      console.error('Error saving items:', itemsError)
+      setToast({ open: true, title: 'Error', description: `Error saving items: ${itemsError.message}` })
       return
     }
     router.push('/dashboard/requests')
@@ -203,7 +208,7 @@ function NewRequestContent() {
         request_id: req.id,
         transaction_id: t.id,
         amount: t.amount,
-        category: t.category || '',
+        category: t.category || 'Other',
         description: t.description,
         date: t.date,
         is_manual_entry: false,
@@ -218,10 +223,12 @@ function NewRequestContent() {
         is_manual_entry: true,
       })),
     ]
+    console.log('Creating items:', items)
     const { error: itemsError } = await supabase.from('reimbursement_items').insert(items)
     if (itemsError) {
       setLoading(false)
-      setToast({ open: true, title: 'Error', description: 'Error saving items.' })
+      console.error('Error saving items:', itemsError)
+      setToast({ open: true, title: 'Error', description: `Error saving items: ${itemsError.message}` })
       return
     }
     
@@ -260,9 +267,69 @@ function NewRequestContent() {
         </CardHeader>
         <CardContent className="bg-white">
           {txItems.length === 0 ? <p className="text-gray-600">No transactions selected.</p> : (
-            <table className="min-w-full text-sm mb-4 bg-white">
+            <>
+              {txItems.length > 0 && (
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedTxIds.size === txItems.length && txItems.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTxIds(new Set(txItems.map(tx => tx.id)))
+                          } else {
+                            setSelectedTxIds(new Set())
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      Select All
+                    </label>
+                    <span className="text-sm text-gray-500">
+                      {selectedTxIds.size} of {txItems.length} selected
+                    </span>
+                  </div>
+                  {selectedTxIds.size > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const remainingTxs = txItems.filter(tx => !selectedTxIds.has(tx.id))
+                        setTxItems(remainingTxs)
+                        setSelectedTxIds(new Set())
+                        
+                        // Update URL with remaining transaction IDs
+                        const remainingIds = remainingTxs.map(tx => tx.id).join(',')
+                        const newUrl = remainingIds 
+                          ? `${window.location.pathname}?tx=${remainingIds}`
+                          : window.location.pathname
+                        window.history.replaceState({}, '', newUrl)
+                      }}
+                      className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                    >
+                      Remove Selected ({selectedTxIds.size})
+                    </Button>
+                  )}
+                </div>
+              )}
+              <table className="min-w-full text-sm mb-4 bg-white">
               <thead>
                 <tr>
+                  <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedTxIds.size === txItems.length && txItems.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTxIds(new Set(txItems.map(tx => tx.id)))
+                        } else {
+                          setSelectedTxIds(new Set())
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                  </th>
                   <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Date</th>
                   <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Description</th>
                   <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Amount</th>
@@ -271,23 +338,79 @@ function NewRequestContent() {
               </thead>
               <tbody>
                 {txItems.map((tx) => (
-                  <tr key={tx.id}>
+                  <tr key={tx.id} className={selectedTxIds.has(tx.id) ? 'bg-blue-50' : ''}>
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedTxIds.has(tx.id)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedTxIds)
+                          if (e.target.checked) {
+                            newSelected.add(tx.id)
+                          } else {
+                            newSelected.delete(tx.id)
+                          }
+                          setSelectedTxIds(newSelected)
+                        }}
+                      />
+                    </td>
                     <td className="text-gray-800 px-4 py-2">{tx.date}</td>
                     <td className="text-gray-800 px-4 py-2">{tx.description}</td>
                     <td className="text-gray-800 px-4 py-2">${tx.amount.toFixed(2)}</td>
                     <td className="text-gray-800 px-4 py-2">
-                      {tx.category ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {tx.category}
-                        </span>
+                      {editingCategory?.id === tx.id ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={editingCategory.category}
+                            onChange={(e) => setEditingCategory({ ...editingCategory, category: e.target.value })}
+                            className="px-2 py-1 text-xs bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select category...</option>
+                            {expenseCategories.map(category => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => {
+                              setTxItems(prev => prev.map(item => 
+                                item.id === tx.id ? { ...item, category: editingCategory.category } : item
+                              ))
+                              setEditingCategory(null)
+                            }}
+                            className="text-green-600 hover:text-green-800 text-xs font-medium"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingCategory(null)}
+                            className="text-red-600 hover:text-red-800 text-xs font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">No category</span>
+                        <div className="flex items-center gap-2">
+                          {tx.category ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {tx.category}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">No category</span>
+                          )}
+                          <button
+                            onClick={() => setEditingCategory({ id: tx.id, category: tx.category || '' })}
+                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </>
           )}
         </CardContent>
       </Card>
@@ -343,9 +466,47 @@ function NewRequestContent() {
               </Button>
             </div>
             {manualItems.length > 0 && (
-              <table className="min-w-full text-sm bg-white">
-                <thead>
-                  <tr>
+              <>
+                <div className="flex justify-between items-center mb-2 mt-4">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedManualIndices.size === manualItems.length && manualItems.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedManualIndices(new Set(manualItems.map((_, i) => i)))
+                          } else {
+                            setSelectedManualIndices(new Set())
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      Select All Manual Items
+                    </label>
+                    <span className="text-sm text-gray-500">
+                      {selectedManualIndices.size} of {manualItems.length} selected
+                    </span>
+                  </div>
+                  {selectedManualIndices.size > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const remainingItems = manualItems.filter((_, i) => !selectedManualIndices.has(i))
+                        setManualItems(remainingItems)
+                        setSelectedManualIndices(new Set())
+                      }}
+                      className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                    >
+                      Remove Selected ({selectedManualIndices.size})
+                    </Button>
+                  )}
+                </div>
+                <table className="min-w-full text-sm bg-white">
+                  <thead>
+                    <tr>
+                      <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left w-10"></th>
                     <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Date</th>
                     <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Description</th>
                     <th className="text-gray-900 bg-gray-50 px-4 py-2 text-left">Amount</th>
@@ -354,7 +515,22 @@ function NewRequestContent() {
                 </thead>
                 <tbody>
                   {manualItems.map((item, i) => (
-                    <tr key={i}>
+                    <tr key={i} className={selectedManualIndices.has(i) ? 'bg-blue-50' : ''}>
+                      <td className="px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedManualIndices.has(i)}
+                          onChange={(e) => {
+                            const newSelected = new Set(selectedManualIndices)
+                            if (e.target.checked) {
+                              newSelected.add(i)
+                            } else {
+                              newSelected.delete(i)
+                            }
+                            setSelectedManualIndices(newSelected)
+                          }}
+                        />
+                      </td>
                       <td className="text-gray-800 px-4 py-2">{item.date}</td>
                       <td className="text-gray-800 px-4 py-2">{item.description}</td>
                       <td className="text-gray-800 px-4 py-2">${item.amount.toFixed(2)}</td>
@@ -366,7 +542,8 @@ function NewRequestContent() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </>
             )}
           </div>
           <div className="mb-4">

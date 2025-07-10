@@ -40,8 +40,12 @@ export async function POST() {
     return NextResponse.json({ linkToken })
   } catch (error) {
     console.error('Error creating link token:', error)
+    let errorMessage = 'Error creating link token'
+    if (error instanceof Error) {
+      errorMessage = error.message
+    }
     return NextResponse.json(
-      { error: 'Error creating link token' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
