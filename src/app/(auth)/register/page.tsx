@@ -39,16 +39,32 @@ export default function RegisterPage() {
         },
       })
       if (authError) throw authError
+      
+      // Profile creation is handled by database trigger
+      // We just need to wait a moment for it to complete
       if (authData.user) {
+        // Optional: verify profile was created
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            full_name: data.fullName,
-            role: 'student',
-          })
-        if (profileError) throw profileError
+          .select('id')
+          .eq('id', authData.user.id)
+          .single()
+        
+        // If profile doesn't exist yet, try to create it manually (fallback)
+        if (profileError && profileError.code === 'PGRST116') {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: authData.user.email,
+              full_name: data.fullName,
+              role: 'student',
+            })
+          if (insertError) {
+            console.error('Profile creation error:', insertError)
+            // Don't throw here - user is registered, just profile creation failed
+          }
+        }
       }
       setToast({ open: true, title: 'Success', description: 'Check your email to confirm your account.' })
       setTimeout(() => router.push('/login?message=Check your email to confirm your account'), 1500)

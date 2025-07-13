@@ -1,7 +1,7 @@
 import { createClient } from './client'
 
 export async function fetchUserTransactions(userId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   return supabase
     .from('transactions')
     .select('*')
@@ -21,7 +21,7 @@ interface Transaction {
 }
 
 export async function insertTransactions(transactions: Transaction[]) {
-  const supabase = createClient()
+  const supabase = await createClient()
   return supabase
     .from('transactions')
     .upsert(transactions, { onConflict: 'plaid_transaction_id' })

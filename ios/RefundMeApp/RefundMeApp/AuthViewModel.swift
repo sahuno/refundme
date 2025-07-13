@@ -33,21 +33,17 @@ class AuthViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // For now, simulate sign up
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        if !email.isEmpty && !password.isEmpty && !fullName.isEmpty {
-            currentUser = User(
-                id: UUID(),
+        do {
+            let (user, session) = try await APIService.shared.signUpMobile(
                 email: email,
-                fullName: fullName,
-                department: nil,
-                adminEmail: nil,
-                createdAt: Date()
+                password: password,
+                fullName: fullName
             )
+            
+            currentUser = user
             isAuthenticated = true
-        } else {
-            errorMessage = "Please fill in all fields"
+        } catch {
+            errorMessage = "Sign up failed: \(error.localizedDescription)"
         }
         
         isLoading = false
@@ -56,5 +52,14 @@ class AuthViewModel: ObservableObject {
     func signOut() async {
         currentUser = nil
         isAuthenticated = false
+    }
+    
+    func refreshUser() async {
+        // Refresh user profile data
+        guard currentUser?.id != nil else { return }
+        
+        // For now, we'll just keep the current user data
+        // In a real implementation, we would fetch updated user data from the API
+        // This method will be called after profile updates to ensure UI shows latest data
     }
 }

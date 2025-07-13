@@ -7,8 +7,9 @@ import { CountryCode, Products } from 'plaid'
 export async function POST() {
   try {
     console.log('Link token API called')
+    const cookieStore = await cookies()
     const supabase = createServerComponentClient({ 
-      cookies: () => cookies()
+      cookies: () => cookieStore
     });
 
     // Get the current user

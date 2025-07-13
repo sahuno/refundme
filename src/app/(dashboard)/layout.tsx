@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { NotificationBell } from '@/components/NotificationBell'
 
 export default function DashboardLayout({
   children,
@@ -31,11 +32,15 @@ export default function DashboardLayout({
             <Button variant="ghost" onClick={() => router.push('/dashboard/requests')}>
               Requests
             </Button>
+            <Button variant="ghost" onClick={() => router.push('/dashboard/learn')}>
+              Learn
+            </Button>
             <Button variant="ghost" onClick={() => router.push('/dashboard/settings')}>
               Settings
             </Button>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <NotificationBell />
             <Button variant="ghost" onClick={handleLogout}>
               Logout
             </Button>

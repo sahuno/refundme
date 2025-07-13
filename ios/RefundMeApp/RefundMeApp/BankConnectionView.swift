@@ -86,7 +86,7 @@ class BankConnectionViewModel: ObservableObject {
         
         do {
             // Get link token from backend
-            let linkToken = try await apiService.createLinkToken()
+            _ = try await apiService.createLinkToken()
             
             // For now, simulate successful connection
             // In production, this would open Plaid Link with the token

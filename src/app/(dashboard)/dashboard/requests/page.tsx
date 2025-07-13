@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Toast } from '@/components/ui/toast'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { ReimbursementPdfDocument } from '@/components/pdf/ReimbursementPdfDocument'
+import Link from 'next/link'
 
 interface Request {
   id: string
@@ -221,6 +222,13 @@ export default function RequestsPage() {
                               {deleting === req.id ? 'Deleting...' : 'Delete'}
                             </Button>
                           </>
+                        )}
+                        {req.status !== 'draft' && (
+                          <Link href={`/dashboard/requests/${req.id}`}>
+                            <Button size="sm" variant="outline">
+                              View Details
+                            </Button>
+                          </Link>
                         )}
                         <PDFDownloadLink
                           document={<ReimbursementPdfDocument request={req} items={requestItems[req.id] || []} />}

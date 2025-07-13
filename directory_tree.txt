@@ -1,0 +1,27 @@
+.
+├── aai
+├── ADMIN_MODULE_IMPLEMENTATION_SUMMARY.md
+├── ADMIN_MODULE_TODO.md
+├── build_log.txt
+├── CLAUDE.md
+├── directory_tree.txt
+├── eslint.config.mjs
+├── FINANCIAL_EDUCATION_HUB_TODO.md
+├── ios
+├── next-env.d.ts
+├── next.config.ts
+├── node_modules
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── public
+├── README.md
+├── screenshots
+├── scripts
+├── src
+├── supabase
+├── tailwind.config.ts
+├── tsconfig.json
+└── tsconfig.tsbuildinfo
+
+9 directories, 16 files

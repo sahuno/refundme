@@ -40,15 +40,15 @@ struct ReimbursementRow: View {
                 Text("Request #\(request.id.uuidString.prefix(8))...")
                     .font(.headline)
                 Spacer()
-                StatusBadge(status: request.status)
+                StatusBadge(status: request.status ?? "pending")
             }
             
             HStack {
-                Text("$\(request.totalAmount, specifier: "%.2f")")
+                Text(formatCurrency(request.totalAmount))
                     .font(.title2)
                     .fontWeight(.bold)
                 Spacer()
-                Text(request.submittedAt, style: .date)
+                Text(formatDate(request.submittedAt ?? request.createdAt))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -63,7 +63,7 @@ struct ReimbursementRow: View {
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    if request.status == .draft {
+                    if request.status == "draft" {
                         Button("Submit") {
                             submitRequest()
                         }
@@ -103,48 +103,19 @@ struct ReimbursementRow: View {
             }
         }
     }
-}
+    
+    // Helper functions
+    private func formatCurrency(_ amount: Decimal?) -> String {
+        guard let amount = amount else { return "$0.00" }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        return formatter.string(from: NSDecimalNumber(decimal: amount)) ?? "$0.00"
+    }
 
-struct StatusBadge: View {
-    let status: ReimbursementStatus
-    
-    var body: some View {
-        Text(status.rawValue.capitalized)
-            .font(.caption)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(backgroundColor)
-            .foregroundColor(textColor)
-            .cornerRadius(8)
-    }
-    
-    private var backgroundColor: Color {
-        switch status {
-        case .pending:
-            return .orange.opacity(0.2)
-        case .approved:
-            return .green.opacity(0.2)
-        case .rejected:
-            return .red.opacity(0.2)
-        case .draft:
-            return .gray.opacity(0.2)
-        case .submitted:
-            return .blue.opacity(0.2)
-        }
-    }
-    
-    private var textColor: Color {
-        switch status {
-        case .pending:
-            return .orange
-        case .approved:
-            return .green
-        case .rejected:
-            return .red
-        case .draft:
-            return .gray
-        case .submitted:
-            return .blue
-        }
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
     }
 }

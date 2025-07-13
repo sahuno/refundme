@@ -195,6 +195,116 @@ export interface Database {
           created_at?: string
         }
       }
+      educational_content: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          content: string
+          category: 'tips' | 'tax' | 'budgeting' | 'savings' | 'investing'
+          tags: string[] | null
+          featured: boolean
+          view_count: number
+          published_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          content: string
+          category: 'tips' | 'tax' | 'budgeting' | 'savings' | 'investing'
+          tags?: string[] | null
+          featured?: boolean
+          view_count?: number
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          content?: string
+          category?: 'tips' | 'tax' | 'budgeting' | 'savings' | 'investing'
+          tags?: string[] | null
+          featured?: boolean
+          view_count?: number
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      content_interactions: {
+        Row: {
+          id: string
+          user_id: string
+          content_id: string
+          interaction_type: 'view' | 'like' | 'bookmark'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          content_id: string
+          interaction_type: 'view' | 'like' | 'bookmark'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          content_id?: string
+          interaction_type?: 'view' | 'like' | 'bookmark'
+          created_at?: string
+        }
+      }
+      weekly_tips: {
+        Row: {
+          id: string
+          content: string
+          week_start: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          content: string
+          week_start: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          content?: string
+          week_start?: string
+          created_at?: string
+        }
+      }
+      budget_templates: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          template_data: Json
+          is_default: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          template_data: Json
+          is_default?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          template_data?: Json
+          is_default?: boolean
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

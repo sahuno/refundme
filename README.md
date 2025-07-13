@@ -46,6 +46,71 @@ The app uses Claude AI to analyze transactions and identify eligible expenses ba
 - **PDF**: React-PDF
 - **Deployment**: Vercel
 
+## System Architecture
+
+### Data Flow and Storage Model
+
+```
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+│   iOS App       │   API   │   Next.js/      │   SQL   │   Supabase      │
+│   (Swift)       │ <-----> │   Vercel        │ <-----> │   (PostgreSQL)  │
+│                 │  HTTPS  │   API Routes    │         │   Database      │
+└─────────────────┘         └─────────────────┘         └─────────────────┘
+     CLIENT                      MIDDLEWARE                   DATABASE
+```
+
+#### Key Architecture Points:
+
+1. **Database (Supabase PostgreSQL)**
+   - Single source of truth for all data
+   - Stores users, transactions, reimbursement requests, etc.
+   - Hosted on Supabase cloud infrastructure
+   - Accessed via SQL queries through Supabase client
+
+2. **API Layer (Next.js on Vercel)**
+   - Middleware between clients and database
+   - Handles authentication and authorization
+   - Processes business logic
+   - Provides RESTful endpoints for both web and mobile
+   - Routes: `/api/*` for web, `/api/mobile/*` for iOS
+
+3. **Client Applications**
+   - **Web App**: Next.js with server and client components
+   - **iOS App**: Native Swift/SwiftUI (does NOT store data)
+   - Both apps fetch data from API on-demand
+   - Only temporary in-memory storage while app is active
+
+#### Data Flow Example - Viewing Transactions:
+
+1. **iOS/Web Client** → Makes HTTPS request to API
+   ```swift
+   // iOS Example
+   APIService.fetchTransactions()
+   ```
+
+2. **API (Vercel)** → Queries Supabase database
+   ```typescript
+   // API Route Example
+   const { data } = await supabase
+     .from('transactions')
+     .select('*')
+     .eq('user_id', userId)
+   ```
+
+3. **Supabase** → Returns data from PostgreSQL
+
+4. **API** → Sends JSON response to client
+
+5. **Client** → Displays data in UI (temporary storage only)
+
+#### Important Notes:
+
+- **No Offline Storage**: Neither web nor iOS apps store data locally
+- **Real-time Updates**: All data fetched fresh from API
+- **Stateless Clients**: Apps don't maintain persistent state
+- **Centralized Logic**: Business rules enforced at API level
+- **Type Safety**: TypeScript (web) and Swift (iOS) models match database schema
+
 ## Getting Started
 
 ### Prerequisites
@@ -161,15 +226,48 @@ The AI feature analyzes transactions using:
 
 To enable AI features, add your Anthropic API key to the environment variables.
 
+## Latest Updates (July 10, 2025)
+
+### 🎓 Financial Education Hub
+- **Educational Content System**: Articles on financial literacy, savings tips, tax guidance, and budgeting for graduate students
+- **Content Categories**: Tips, Tax, Budgeting, Savings, and Investing
+- **Interactive Features**: View tracking, bookmarking, and content search
+- **Weekly Tips**: Automated weekly financial tips based on spending patterns
+- **Budget Templates**: Department-specific budget planning tools
+
+### 👥 Enhanced Admin Structure
+- **Super Admin**: Single administrator with full app management capabilities
+  - Content management (create, edit, delete educational articles)
+  - User management across all departments
+  - System settings and configuration
+- **Department Admins**: Multiple administrators for department-specific approvals
+  - Can only view/approve reimbursements from their assigned department
+  - Restricted access based on student department affiliation
+  - Streamlined approval workflow
+
+### 🔐 Security Enhancements
+- **Row Level Security (RLS)**: Department-based access control for administrators
+- **Hierarchical Permissions**: Clear separation between super admin and department admin capabilities
+- **Audit Trail**: Comprehensive tracking of all admin actions
+
+### 📊 New Database Features
+- **Educational Content Tables**: `educational_content`, `content_interactions`, `weekly_tips`, `budget_templates`
+- **Admin Structure**: `is_super_admin` and `admin_department` fields in profiles
+- **Department Statistics View**: Real-time analytics per department
+
 ## Database Schema
 
 The app uses these main tables:
-- `profiles`: User profile information
+- `profiles`: User profile information with admin roles
 - `bank_connections`: Plaid bank account connections
 - `transactions`: Synced financial transactions
 - `reimbursement_requests`: Submitted reimbursement requests
 - `reimbursement_items`: Individual items in requests
 - `allowances`: User allowance tracking
+- `educational_content`: Financial literacy articles and guides
+- `content_interactions`: User engagement with educational content
+- `weekly_tips`: Automated financial tips system
+- `budget_templates`: Department-specific budget planning tools
 
 ## Development
 

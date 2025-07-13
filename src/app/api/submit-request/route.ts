@@ -99,7 +99,7 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
 
 export async function POST(req: Request) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -141,17 +141,51 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to fetch request items' }, { status: 500 })
     }
 
-    // Update request status to submitted
+    // Check auto-approval settings
+    const { data: autoApprovalSetting } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'auto_approval_limit')
+      .single()
+
+    let newStatus = 'submitted'
+    let autoApproved = false
+
+    if (autoApprovalSetting?.value?.enabled && autoApprovalSetting?.value?.amount && request.total_amount <= autoApprovalSetting.value.amount) {
+      newStatus = 'approved'
+      autoApproved = true
+    }
+
+    // Update request status
     const { error: updateError } = await supabase
       .from('reimbursement_requests')
       .update({ 
-        status: 'submitted', 
-        submitted_at: new Date().toISOString() 
+        status: newStatus, 
+        submitted_at: new Date().toISOString(),
+        ...(autoApproved && {
+          reviewed_at: new Date().toISOString(),
+          admin_notes: `Auto-approved: Amount under $${autoApprovalSetting?.value?.amount || 0} threshold`
+        })
       })
       .eq('id', request_id)
+      .eq('user_id', user.id)
+      .eq('status', 'draft') // Ensure we're only updating draft requests
 
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update request status' }, { status: 500 })
+    }
+
+    // Create notification for auto-approval
+    if (autoApproved) {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'request_approved',
+          title: 'Request Auto-Approved',
+          message: `Your reimbursement request for $${request.total_amount.toFixed(2)} has been automatically approved.`,
+          related_request_id: request_id
+        })
     }
 
     // Determine which admin email to use
@@ -180,4 +214,16 @@ export async function POST(req: Request) {
     console.error('Submission error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+// Add OPTIONS for CORS support (for mobile app)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
 }
