@@ -25,6 +25,7 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const message = searchParams.get('message')
+  const error = searchParams.get('error')
   const supabase = createClient()
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) })
 
@@ -61,6 +62,11 @@ function LoginContent() {
           {message && (
             <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-md">
               {message}
+            </div>
+          )}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
+              {error}
             </div>
           )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

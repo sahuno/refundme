@@ -463,6 +463,17 @@ class APIService {
             "notes": notes as Any
         ]
         
+        #if DEBUG
+        print("Submitting reimbursement request to: \(url)")
+        print("Transaction count: \(transactions.count)")
+        print("Manual items count: \(manualItems.count)")
+        print("Description: \(description)")
+        if let jsonData = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("Request body: \(jsonString)")
+        }
+        #endif
+        
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -471,15 +482,21 @@ class APIService {
             throw APIError.networkError
         }
         
+        #if DEBUG
+        print("Submit response status: \(httpResponse.statusCode)")
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("Response body: \(responseString)")
+        }
+        #endif
+        
         if httpResponse.statusCode == 200 {
+            // Try to parse success response
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+               let success = json["success"] as? Bool, success {
+                return true
+            }
             return true
         } else {
-            #if DEBUG
-            print("Submit request failed with status: \(httpResponse.statusCode)")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Response: \(responseString)")
-            }
-            #endif
             throw APIError.networkError
         }
     }

@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Check admin access
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -29,7 +29,7 @@ export async function POST(
     const { data: updatedRequest, error: updateError } = await supabase
       .from('reimbursement_requests')
       .update({
-        status: 'approved',
+        status: 'approved' as const,
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         admin_notes: admin_notes || null
@@ -46,12 +46,19 @@ export async function POST(
       )
     }
 
+    if (!updatedRequest) {
+      return NextResponse.json(
+        { error: 'Request not found' },
+        { status: 404 }
+      )
+    }
+
     // Create notification for the student
     const { error: notificationError } = await supabase
       .from('notifications')
       .insert({
         user_id: updatedRequest.user_id,
-        type: 'request_approved',
+        type: 'request_approved' as const,
         title: 'Reimbursement Request Approved',
         message: `Your reimbursement request for $${updatedRequest.total_amount.toFixed(2)} has been approved.`,
         related_request_id: id

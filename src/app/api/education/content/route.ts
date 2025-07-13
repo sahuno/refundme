@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const limit = searchParams.get('limit')
   const search = searchParams.get('search')
 
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     let query = supabase

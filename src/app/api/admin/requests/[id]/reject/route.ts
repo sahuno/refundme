@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Check admin access
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -36,7 +36,7 @@ export async function POST(
     const { data: updatedRequest, error: updateError } = await supabase
       .from('reimbursement_requests')
       .update({
-        status: 'rejected',
+        status: 'rejected' as const,
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         rejection_reason,
@@ -54,12 +54,19 @@ export async function POST(
       )
     }
 
+    if (!updatedRequest) {
+      return NextResponse.json(
+        { error: 'Request not found' },
+        { status: 404 }
+      )
+    }
+
     // Create notification for the student
     const { error: notificationError } = await supabase
       .from('notifications')
       .insert({
         user_id: updatedRequest.user_id,
-        type: 'request_rejected',
+        type: 'request_rejected' as const,
         title: 'Reimbursement Request Rejected',
         message: `Your reimbursement request has been rejected. Reason: ${rejection_reason}`,
         related_request_id: id

@@ -1,8 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { User } from '@supabase/supabase-js'
 
-export async function checkAdminAccess() {
-  const supabase = await createClient()
+interface AdminProfile {
+  role: 'administrator' | 'accountant' | 'student'
+  is_super_admin: boolean
+  admin_department: string | null
+}
+
+export async function checkAdminAccess(): Promise<{ user: User; profile: AdminProfile }> {
+  const supabase = createClient()
   
   // Get the current user
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -27,11 +34,11 @@ export async function checkAdminAccess() {
     redirect('/dashboard')
   }
 
-  return { user, profile }
+  return { user, profile: profile as AdminProfile }
 }
 
-export async function checkSuperAdminAccess() {
-  const supabase = await createClient()
+export async function checkSuperAdminAccess(): Promise<{ user: User; profile: { is_super_admin: boolean } }> {
+  const supabase = createClient()
   
   // Get the current user
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -55,7 +62,7 @@ export async function checkSuperAdminAccess() {
 }
 
 export async function isAdmin(userId: string): Promise<boolean> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: profile } = await supabase
     .from('profiles')
@@ -67,7 +74,7 @@ export async function isAdmin(userId: string): Promise<boolean> {
 }
 
 export async function isSuperAdmin(userId: string): Promise<boolean> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: profile } = await supabase
     .from('profiles')
@@ -79,7 +86,7 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
 }
 
 export async function getAdminDepartment(userId: string): Promise<string | null> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: profile } = await supabase
     .from('profiles')

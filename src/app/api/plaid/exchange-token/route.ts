@@ -4,7 +4,7 @@ import { plaidClient } from '@/lib/plaid/client'
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

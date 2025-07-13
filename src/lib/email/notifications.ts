@@ -170,21 +170,27 @@ export async function notifyStudentOfStatusChange(
   adminNotes?: string,
   rejectionReason?: string
 ) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Get request and student details
-  const { data: request } = await supabase
+  const { data: request, error } = await supabase
     .from('reimbursement_requests')
     .select('*, profiles!reimbursement_requests_user_id_fkey(email, full_name)')
     .eq('id', requestId)
     .single()
 
-  if (!request || !request.profiles) {
-    console.error('Could not find request or student details')
+  if (error || !request) {
+    console.error('Could not find request:', error)
     return
   }
 
-  const profile = Array.isArray(request.profiles) ? request.profiles[0] : request.profiles
+  const profiles = request.profiles as { email: string; full_name: string } | null
+  if (!profiles) {
+    console.error('Could not find student details')
+    return
+  }
+
+  const profile = Array.isArray(profiles) ? profiles[0] : profiles
 
   return sendStatusUpdateEmail({
     to: profile.email,

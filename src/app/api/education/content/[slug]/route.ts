@@ -5,7 +5,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { slug } = await params
 
   try {

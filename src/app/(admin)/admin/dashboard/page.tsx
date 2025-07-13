@@ -22,16 +22,16 @@ interface RequestWithProfile {
 }
 
 async function getAdminStats() {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Get stats from the view we created
-  const { data: stats } = await supabase
+  const { data: stats, error: statsError } = await supabase
     .from('admin_dashboard_stats')
     .select('*')
     .single()
 
   // Get recent requests
-  const { data: recentRequests } = await supabase
+  const { data: recentRequests, error: requestsError } = await supabase
     .from('reimbursement_requests')
     .select(`
       *,
@@ -43,7 +43,10 @@ async function getAdminStats() {
     .order('created_at', { ascending: false })
     .limit(5)
 
-  return { stats, recentRequests }
+  return { 
+    stats: statsError ? null : stats as AdminStats, 
+    recentRequests: requestsError ? [] : recentRequests as RequestWithProfile[]
+  }
 }
 
 export default async function AdminDashboard() {
@@ -63,7 +66,7 @@ export default async function AdminDashboard() {
             <CardTitle className="text-sm font-medium text-gray-600">Pending Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{(stats as AdminStats | null)?.pending_requests || 0}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats?.pending_requests || 0}</div>
             <Link 
               href="/admin/requests?status=submitted" 
               className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block"
@@ -78,9 +81,9 @@ export default async function AdminDashboard() {
             <CardTitle className="text-sm font-medium text-gray-600">Requests This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{(stats as AdminStats | null)?.requests_this_month || 0}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats?.requests_this_month || 0}</div>
             <p className="text-sm text-gray-500 mt-1">
-              {(stats as AdminStats | null)?.approved_this_month || 0} approved
+              {stats?.approved_this_month || 0} approved
             </p>
           </CardContent>
         </Card>
@@ -91,7 +94,7 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              ${((stats as AdminStats | null)?.total_approved_amount || 0).toFixed(2)}
+              ${(stats?.total_approved_amount || 0).toFixed(2)}
             </div>
             <p className="text-sm text-gray-500 mt-1">This month</p>
           </CardContent>
@@ -103,7 +106,7 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {Math.round((stats as AdminStats | null)?.avg_processing_hours || 0)} hrs
+              {Math.round(stats?.avg_processing_hours || 0)} hrs
             </div>
             <p className="text-sm text-gray-500 mt-1">From submission to decision</p>
           </CardContent>
@@ -136,7 +139,7 @@ export default async function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {(recentRequests as RequestWithProfile[] | null)?.map((request) => (
+                {recentRequests.map((request) => (
                   <tr key={request.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div>

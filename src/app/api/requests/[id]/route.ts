@@ -7,7 +7,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

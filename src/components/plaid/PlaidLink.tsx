@@ -21,9 +21,16 @@ export function PlaidLink() {
         console.log('Link token response status:', response.status)
         
         if (!response.ok) {
-          const errorText = await response.text()
-          console.error('Link token error:', errorText)
-          throw new Error(`HTTP ${response.status}: ${errorText}`)
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('Link token error:', errorData)
+          
+          // Check for specific error conditions
+          if (response.status === 500 && errorData.error?.includes('Missing Plaid credentials')) {
+            console.error('Plaid is not configured. Please set environment variables.')
+            alert('Bank connection is not configured. Please contact support.')
+          }
+          
+          throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`)
         }
         
         const data = await response.json()

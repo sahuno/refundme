@@ -3,20 +3,35 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('Auth error:', userError)
+      return NextResponse.json({ error: 'Unauthorized', details: userError?.message }, { status: 401 })
     }
 
     const body = await req.json()
     const { transactions, manualItems, description, adminEmail, notes } = body
+    
+    console.log('Received request:', {
+      userId: user.id,
+      transactionCount: transactions?.length || 0,
+      manualItemCount: manualItems?.length || 0,
+      description
+    })
 
     // Calculate total amount
     const transactionTotal = transactions?.reduce((sum: number, tx: { amount: number }) => sum + tx.amount, 0) || 0
     const manualTotal = manualItems?.reduce((sum: number, item: { amount: number }) => sum + item.amount, 0) || 0
     const totalAmount = transactionTotal + manualTotal
+    
+    if (totalAmount <= 0) {
+      return NextResponse.json({ 
+        error: 'Invalid request',
+        details: 'Total amount must be greater than 0' 
+      }, { status: 400 })
+    }
 
     // 1. Create the reimbursement request
     const { data: request, error: requestError } = await supabase

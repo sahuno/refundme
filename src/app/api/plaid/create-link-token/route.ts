@@ -7,9 +7,11 @@ import { CountryCode, Products } from 'plaid'
 export async function POST() {
   try {
     console.log('Link token API called')
-    const cookieStore = await cookies()
     const supabase = createServerComponentClient({ 
-      cookies: () => cookieStore
+      cookies: async () => {
+        const cookieStore = await cookies();
+        return cookieStore;
+      }
     });
 
     // Get the current user
@@ -35,13 +37,48 @@ export async function POST() {
       language: 'en',
     }
 
-    const response = await plaidClient.linkTokenCreate(request)
-    const linkToken = response.data.link_token
+    console.log('Creating link token with request:', JSON.stringify(request, null, 2))
+    
+    try {
+      const response = await plaidClient.linkTokenCreate(request)
+      const linkToken = response.data.link_token
+      console.log('Link token created successfully')
 
-    return NextResponse.json({ linkToken })
+      return NextResponse.json({ linkToken })
+    } catch (plaidError: any) {
+      console.error('Plaid API error:', plaidError)
+      
+      // Extract detailed error information
+      let errorDetails = {
+        message: 'Error creating link token',
+        code: 'UNKNOWN_ERROR',
+        type: 'UNKNOWN'
+      }
+      
+      if (plaidError.response?.data) {
+        errorDetails = {
+          message: plaidError.response.data.error_message || 'Plaid API error',
+          code: plaidError.response.data.error_code || 'PLAID_ERROR',
+          type: plaidError.response.data.error_type || 'API_ERROR'
+        }
+      } else if (plaidError instanceof Error) {
+        errorDetails.message = plaidError.message
+      }
+      
+      console.error('Detailed error:', errorDetails)
+      
+      return NextResponse.json(
+        { 
+          error: errorDetails.message,
+          code: errorDetails.code,
+          type: errorDetails.type
+        },
+        { status: 500 }
+      )
+    }
   } catch (error) {
-    console.error('Error creating link token:', error)
-    let errorMessage = 'Error creating link token'
+    console.error('Unexpected error:', error)
+    let errorMessage = 'Unexpected error occurred'
     if (error instanceof Error) {
       errorMessage = error.message
     }
