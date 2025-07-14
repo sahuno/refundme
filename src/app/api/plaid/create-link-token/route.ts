@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { plaidClient } from '@/lib/plaid/client'
 import { CountryCode, Products } from 'plaid'
 
 export async function POST() {
   try {
     console.log('Link token API called')
-    const supabase = createServerComponentClient({ 
-      cookies: async () => {
-        const cookieStore = await cookies();
-        return cookieStore;
-      }
-    });
+    const supabase = createClient()
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -45,7 +39,7 @@ export async function POST() {
       console.log('Link token created successfully')
 
       return NextResponse.json({ linkToken })
-    } catch (plaidError: any) {
+    } catch (plaidError) {
       console.error('Plaid API error:', plaidError)
       
       // Extract detailed error information
@@ -55,14 +49,16 @@ export async function POST() {
         type: 'UNKNOWN'
       }
       
-      if (plaidError.response?.data) {
+      const error = plaidError as Error & { response?: { data?: { error_message?: string; error_code?: string; error_type?: string } } }
+      
+      if (error.response?.data) {
         errorDetails = {
-          message: plaidError.response.data.error_message || 'Plaid API error',
-          code: plaidError.response.data.error_code || 'PLAID_ERROR',
-          type: plaidError.response.data.error_type || 'API_ERROR'
+          message: error.response.data.error_message || 'Plaid API error',
+          code: error.response.data.error_code || 'PLAID_ERROR',
+          type: error.response.data.error_type || 'API_ERROR'
         }
-      } else if (plaidError instanceof Error) {
-        errorDetails.message = plaidError.message
+      } else if (error instanceof Error) {
+        errorDetails.message = error.message
       }
       
       console.error('Detailed error:', errorDetails)
@@ -87,4 +83,16 @@ export async function POST() {
       { status: 500 }
     )
   }
+}
+
+// Add OPTIONS handler for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
 } 

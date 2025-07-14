@@ -38,7 +38,7 @@ export async function GET() {
       categories_count: response.data.categories.length,
       env_check: envCheck
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Plaid test error:', error)
     
     let errorDetails = {
@@ -47,21 +47,23 @@ export async function GET() {
       type: 'UNKNOWN'
     }
     
-    if (error.response?.data) {
+    const plaidError = error as Error & { response?: { data?: { error_message?: string; error_code?: string; error_type?: string } } }
+    
+    if (plaidError.response?.data) {
       errorDetails = {
-        message: error.response.data.error_message || 'Plaid API error',
-        code: error.response.data.error_code || 'PLAID_ERROR',
-        type: error.response.data.error_type || 'API_ERROR'
+        message: plaidError.response.data.error_message || 'Plaid API error',
+        code: plaidError.response.data.error_code || 'PLAID_ERROR',
+        type: plaidError.response.data.error_type || 'API_ERROR'
       }
-    } else if (error instanceof Error) {
-      errorDetails.message = error.message
+    } else if (plaidError instanceof Error) {
+      errorDetails.message = plaidError.message
     }
     
     return NextResponse.json({
       success: false,
       error: errorDetails,
       env_check: envCheck,
-      raw_error: error.toString()
+      raw_error: String(error)
     }, { status: 500 })
   }
 }

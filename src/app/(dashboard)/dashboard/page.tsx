@@ -104,32 +104,8 @@ export default function DashboardPage() {
             ) : (
               <p>No bank connections</p>
             )}
-            <div className="mt-4 space-y-2">
+            <div className="mt-4">
               <PlaidLink />
-              <button 
-                className="ml-2 px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-                onClick={async () => {
-                  console.log('Testing link token API...')
-                  try {
-                    const response = await fetch('/api/plaid/create-link-token', { method: 'POST' })
-                    const data = await response.json()
-                    console.log('Direct API test result:', data)
-                    console.log('Response status:', response.status)
-                    console.log('Response ok:', response.ok)
-                    
-                    if (!response.ok) {
-                      alert(`API Failed (${response.status}): ${data.error || 'Unknown error'}`)
-                    } else {
-                      alert(`API Success: Got link token`)
-                    }
-                  } catch (error) {
-                    console.error('Direct API test failed:', error)
-                    alert(`Network Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                  }
-                }}
-              >
-                Test API Direct
-              </button>
             </div>
           </CardContent>
         </Card>

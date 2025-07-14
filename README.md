@@ -226,34 +226,76 @@ The AI feature analyzes transactions using:
 
 To enable AI features, add your Anthropic API key to the environment variables.
 
-## Latest Updates (July 10, 2025)
+## Recent Updates
 
-### 🎓 Financial Education Hub
-- **Educational Content System**: Articles on financial literacy, savings tips, tax guidance, and budgeting for graduate students
+### July 13-14, 2025 - Production Deployment & Security Hardening
+
+#### 🚀 Web App Production Deployment
+- **Vercel Deployment**: Successfully deployed web app to production at `refundme-samuel-ahunos-projects.vercel.app`
+- **Environment Configuration**: Proper setup for Plaid production environment
+- **Build Optimization**: Fixed all TypeScript errors and linting issues for clean deployment
+- **Email Confirmation Flow**: Implemented `/auth/callback` route for email verification
+- **Root Page Fix**: Resolved default Next.js page showing on production
+
+#### 🔍 Transaction Search Feature
+- **Search Functionality**: Added real-time search across transactions
+- **Multi-field Search**: Search by description, merchant name, category, amount, or date
+- **User Experience**: Clear results count and "no results" messaging
+- **Performance**: Efficient client-side filtering with immediate feedback
+
+#### 🔒 Critical Security Fixes
+- **Authentication Enforcement**: 
+  - Converted dashboard layout to server component with auth checks
+  - Added middleware protection for all dashboard/admin routes
+  - Double-layer security (middleware + server components)
+- **CORS Security**: Removed wildcard (`*`) origin, now requires explicit allowed origins
+- **Test Endpoint Protection**: All test endpoints return 404 in production
+- **Rate Limiting**: Implemented on expensive endpoints (OCR: 10 req/min)
+- **Security Headers**: Added CSP, X-Frame-Options, X-Content-Type-Options
+- **API Authentication**: Created `requireAuth()` helper for all API routes
+- **Database Security**: 
+  - Stronger RLS policies preventing transaction deletion in reimbursements
+  - Audit logging for sensitive operations
+  - Time-based restrictions on modifications
+
+#### 📱 iOS App Fixes
+- **Build Errors**: Fixed property mismatches (`date` → `transactionDate`)
+- **Production URLs**: Updated hardcoded localhost URLs to use deployed API
+- **Authentication**: Fixed missing auth headers in API requests
+- **Reimbursement Creation**: Implemented missing mobile endpoint
+- **Profile Editing**: Added OPTIONS handler for CORS preflight
+
+#### 🏦 Bank Connection Issues Resolved
+- **Plaid Integration**: Fixed authentication in create-link-token endpoint
+- **Session Management**: Added proper session validation before token creation
+- **Error Handling**: Enhanced user feedback for connection failures
+
+### July 12, 2025 - iOS App Development & Bug Fixes
+
+#### 📱 iOS App Implementation
+- **Native SwiftUI App**: Complete iOS implementation with MVVM architecture
+- **Shared Backend**: Uses same Supabase database and API routes as web
+- **Feature Parity**: All major features available on mobile
+- **Mobile API Endpoints**: Created dedicated `/api/mobile/*` routes with CORS support
+
+#### 🐛 Major Bug Fixes
+- **User Registration**: Fixed RLS policy violations by adding INSERT policy for profiles
+- **PDF Generation**: Resolved iOS build errors related to PDFGenerator
+- **Mobile Authentication**: Fixed 405 errors on profile updates
+
+### July 10, 2025 - Admin System & Educational Features
+
+#### 🎓 Financial Education Hub
+- **Educational Content System**: Articles on financial literacy for graduate students
 - **Content Categories**: Tips, Tax, Budgeting, Savings, and Investing
 - **Interactive Features**: View tracking, bookmarking, and content search
 - **Weekly Tips**: Automated weekly financial tips based on spending patterns
-- **Budget Templates**: Department-specific budget planning tools
 
-### 👥 Enhanced Admin Structure
-- **Super Admin**: Single administrator with full app management capabilities
-  - Content management (create, edit, delete educational articles)
-  - User management across all departments
-  - System settings and configuration
-- **Department Admins**: Multiple administrators for department-specific approvals
-  - Can only view/approve reimbursements from their assigned department
-  - Restricted access based on student department affiliation
-  - Streamlined approval workflow
-
-### 🔐 Security Enhancements
-- **Row Level Security (RLS)**: Department-based access control for administrators
-- **Hierarchical Permissions**: Clear separation between super admin and department admin capabilities
-- **Audit Trail**: Comprehensive tracking of all admin actions
-
-### 📊 New Database Features
-- **Educational Content Tables**: `educational_content`, `content_interactions`, `weekly_tips`, `budget_templates`
-- **Admin Structure**: `is_super_admin` and `admin_department` fields in profiles
-- **Department Statistics View**: Real-time analytics per department
+#### 👥 Three-Tier Admin System
+- **Super Admin**: Full system access and user management
+- **Administrator**: Department-level approval authority
+- **Accountant**: Financial processing without approval rights
+- **Department Isolation**: Admins only see their assigned department's data
 
 ## Database Schema
 
@@ -268,6 +310,29 @@ The app uses these main tables:
 - `content_interactions`: User engagement with educational content
 - `weekly_tips`: Automated financial tips system
 - `budget_templates`: Department-specific budget planning tools
+
+## Notes on Admins
+Key Features:
+
+  - Department Isolation: Admins only see their department's data
+  - Role-Based UI: Different dashboards for different roles
+  - Audit Trail: All admin actions are logged
+  - Flexible Assignment: Can have multiple admins per department
+
+  To Create Admins:
+
+  You need to update the database directly:
+  -- Create a super admin
+  UPDATE profiles
+  SET is_super_admin = true, role = 'administrator'
+  WHERE email = 'superadmin@university.edu';
+
+  -- Create a department admin
+  UPDATE profiles
+  SET role = 'administrator', admin_department = 'Computer Science'
+  WHERE email = 'cs-admin@university.edu';
+
+  The admin system ensures proper access control while maintaining flexibility for different organizational structures
 
 ## Development
 

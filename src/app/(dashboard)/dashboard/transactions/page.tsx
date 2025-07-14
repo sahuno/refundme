@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useRouter } from 'next/navigation'
 import { TransactionAnalyzer } from '@/components/ai/TransactionAnalyzer'
+import { Search } from 'lucide-react'
 
 interface Transaction {
   id: string
@@ -21,8 +23,14 @@ export default function TransactionsPage() {
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [showAIAnalyzer, setShowAIAnalyzer] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  // Clear selection when search term changes
+  useEffect(() => {
+    setSelected([])
+  }, [searchTerm])
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -53,6 +61,20 @@ export default function TransactionsPage() {
     setShowAIAnalyzer(false)
   }
 
+  // Filter transactions based on search term
+  const filteredTransactions = transactions.filter(tx => {
+    if (!searchTerm.trim()) return true
+    
+    const search = searchTerm.toLowerCase()
+    return (
+      tx.description?.toLowerCase().includes(search) ||
+      tx.merchant_name?.toLowerCase().includes(search) ||
+      tx.category?.toLowerCase().includes(search) ||
+      tx.amount.toString().includes(search) ||
+      tx.date.includes(search)
+    )
+  })
+
   return (
     <div className="space-y-6 bg-white text-gray-900 min-h-screen p-4">
       <div className="flex justify-between items-center">
@@ -79,34 +101,63 @@ export default function TransactionsPage() {
 
       {showAIAnalyzer && (
         <TransactionAnalyzer
-          transactions={transactions}
+          transactions={filteredTransactions}
           onEligibleSelected={handleAISelection}
         />
       )}
 
       <Card className="bg-white text-gray-900 shadow">
         <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle>Recent Transactions</CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full bg-white text-gray-900 border-gray-300"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p>Loading...</p>
           ) : transactions.length === 0 ? (
             <p>No transactions found.</p>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No transactions match your search for &quot;{searchTerm}&quot;</p>
+              <Button 
+                variant="link" 
+                onClick={() => setSearchTerm('')}
+                className="mt-2 text-blue-600 hover:text-blue-800"
+              >
+                Clear search
+              </Button>
+            </div>
           ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th className="text-left">Date</th>
-                  <th className="text-left">Description</th>
-                  <th className="text-left">Merchant</th>
-                  <th className="text-left">Category</th>
-                  <th className="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((tx) => (
+            <>
+              {searchTerm && (
+                <div className="mb-4 text-sm text-gray-600">
+                  Found {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} matching &quot;{searchTerm}&quot;
+                </div>
+              )}
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th className="text-left">Date</th>
+                    <th className="text-left">Description</th>
+                    <th className="text-left">Merchant</th>
+                    <th className="text-left">Category</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((tx) => (
                   <tr key={tx.id}>
                     <td>
                       <input
@@ -122,8 +173,9 @@ export default function TransactionsPage() {
                     <td className="text-right">${tx.amount.toFixed(2)}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </>
           )}
         </CardContent>
       </Card>

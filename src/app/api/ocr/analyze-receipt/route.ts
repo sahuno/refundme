@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth/api'
+import rateLimit from '@/lib/rate-limit'
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+
+// Rate limiter: 10 requests per minute per user
+const limiter = rateLimit({
+  interval: 60 * 1000, // 1 minute
+  uniqueTokenPerInterval: 500
+})
 
 interface ReceiptData {
   merchant_name: string
@@ -18,11 +25,18 @@ interface ReceiptData {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check authentication
+    const authResult = await requireAuth()
+    if ('status' in authResult) {
+      return authResult
+    }
+    const { user } = authResult
+
+    // Apply rate limiting
+    try {
+      await limiter.check(10, user.id) // 10 requests per minute
+    } catch (rateLimitResponse) {
+      return rateLimitResponse as NextResponse
     }
 
     if (!ANTHROPIC_API_KEY) {
@@ -46,10 +60,11 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 5MB for security)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ 
-        error: 'File too large. Please upload an image smaller than 10MB.' 
+        error: 'File too large. Please upload an image smaller than 5MB.' 
       }, { status: 400 })
     }
 
@@ -154,6 +169,11 @@ Instructions:
         error: 'Could not extract essential receipt information. Please try with a clearer image.' 
       }, { status: 400 })
     }
+
+    // Sanitize the data
+    receiptData.merchant_name = receiptData.merchant_name.substring(0, 100)
+    receiptData.total_amount = Math.abs(receiptData.total_amount)
+    receiptData.items = receiptData.items.slice(0, 50) // Limit items
 
     // Return the extracted data
     return NextResponse.json({
