@@ -1,15 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import rateLimit from '@/lib/rate-limit';
+
+// Strict rate limit for auth: 5 attempts per minute per IP
+const limiter = rateLimit({
+  uniqueTokenPerInterval: 500,
+  interval: 60000,
+});
 
 export async function POST(request: NextRequest) {
+  // Rate limit by IP to prevent brute-force attacks
+  const ip = request.headers.get('x-forwarded-for') ?? 'anonymous';
+  try {
+    await limiter.check(5, ip);
+  } catch (rateLimitResponse) {
+    return rateLimitResponse as NextResponse;
+  }
+
   const { email, password, action, fullName } = await request.json();
-  
+
   // Create a Supabase client without cookies for mobile
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
-  
+
   try {
     if (action === 'signin') {
       // Mobile auth attempt

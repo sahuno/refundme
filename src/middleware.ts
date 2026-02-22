@@ -17,12 +17,15 @@ export async function middleware(req: NextRequest) {
     res.headers.set(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.plaid.com; " +
+      "script-src 'self' 'unsafe-inline' https://cdn.plaid.com; " +
       "style-src 'self' 'unsafe-inline'; " +
       "img-src 'self' data: https: blob:; " +
       "font-src 'self' data:; " +
       "connect-src 'self' https://*.supabase.co https://api.plaid.com https://cdn.plaid.com wss://*.supabase.co; " +
-      "frame-src 'self' https://cdn.plaid.com;"
+      "frame-src 'self' https://cdn.plaid.com; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
     )
   }
   

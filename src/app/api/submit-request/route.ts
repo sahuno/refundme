@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import rateLimit from '@/lib/rate-limit'
+
+// Rate limit submissions: 10 per minute per user
+const limiter = rateLimit({
+  uniqueTokenPerInterval: 500,
+  interval: 60000,
+})
 
 interface RequestSubmissionData {
   request_id: string
@@ -113,6 +120,13 @@ export async function POST(req: Request) {
     
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit by authenticated user ID
+    try {
+      await limiter.check(10, user.id)
+    } catch (rateLimitResponse) {
+      return rateLimitResponse as NextResponse
     }
 
     const { request_id } = await req.json()
