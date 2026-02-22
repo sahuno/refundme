@@ -102,7 +102,7 @@ class APIService {
         
         let user = User(
             id: UUID(uuidString: authResponse.profile?.id ?? authResponse.user.id) ?? UUID(),
-            email: authResponse.user.email,
+            email: authResponse.user.email ?? email,
             fullName: authResponse.profile?.fullName ?? fullName,
             department: authResponse.profile?.department,
             adminEmail: authResponse.profile?.adminEmail,

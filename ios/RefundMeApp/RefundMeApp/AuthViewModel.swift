@@ -34,7 +34,7 @@ class AuthViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let (user, session) = try await APIService.shared.signUpMobile(
+            let (user, _) = try await APIService.shared.signUpMobile(
                 email: email,
                 password: password,
                 fullName: fullName

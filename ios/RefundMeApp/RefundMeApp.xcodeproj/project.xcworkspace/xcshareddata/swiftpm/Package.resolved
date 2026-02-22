@@ -1,5 +1,5 @@
 {
-  "originHash" : "9c87c5ac5564969a356cacf16bdeb2c31901acdc7116092d634437a6c07dec23",
+  "originHash" : "fa8d17e09780d34e742208c2696fea111126b58261842a1beb556abb14a6da14",
   "pins" : [
     {
       "identity" : "plaid-link-ios",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "5988db252c03c25f3bd1e9404a9f932fb1f9731b",
         "version" : "6.2.0"
+      }
+    },
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa.git",
+      "state" : {
+        "revision" : "16cd512711375fa73f25ae5e373f596bdf4251ae",
+        "version" : "8.58.0"
       }
     },
     {
