@@ -54,13 +54,7 @@ export async function GET(
 }
 
 // Add OPTIONS for CORS support
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: Request) {
+  const { corsOptionsResponse } = await import('@/lib/cors')
+  return corsOptionsResponse(request, 'GET')
 }

@@ -3,6 +3,15 @@ import { createClient } from '@/lib/supabase/server'
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 interface EmailNotificationData {
   to: string
   studentName: string
@@ -33,7 +42,7 @@ export async function sendStatusUpdateEmail(data: EmailNotificationData) {
             </div>
             
             <div style="padding: 30px;">
-              <p>Hi ${data.studentName},</p>
+              <p>Hi ${escapeHtml(data.studentName)},</p>
               
               <p>Great news! Your reimbursement request has been approved.</p>
               
@@ -42,7 +51,7 @@ export async function sendStatusUpdateEmail(data: EmailNotificationData) {
                 <p><strong>Request ID:</strong> ${data.requestId}</p>
                 <p><strong>Approved Amount:</strong> $${data.totalAmount.toFixed(2)}</p>
                 <p><strong>Approval Date:</strong> ${new Date().toLocaleDateString()}</p>
-                ${data.adminNotes ? `<p><strong>Admin Notes:</strong> ${data.adminNotes}</p>` : ''}
+                ${data.adminNotes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(data.adminNotes)}</p>` : ''}
               </div>
               
               <p><strong>Next Steps:</strong></p>
@@ -69,14 +78,14 @@ export async function sendStatusUpdateEmail(data: EmailNotificationData) {
             </div>
             
             <div style="padding: 30px;">
-              <p>Hi ${data.studentName},</p>
+              <p>Hi ${escapeHtml(data.studentName)},</p>
               
               <p>Your reimbursement request needs some adjustments before it can be approved.</p>
               
               <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
                 <h3 style="margin-top: 0; color: #991b1b;">Reason for Rejection</h3>
-                <p>${data.rejectionReason || 'Please review the admin notes for details.'}</p>
-                ${data.adminNotes ? `<p><strong>Additional Notes:</strong> ${data.adminNotes}</p>` : ''}
+                <p>${escapeHtml(data.rejectionReason || 'Please review the admin notes for details.')}</p>
+                ${data.adminNotes ? `<p><strong>Additional Notes:</strong> ${escapeHtml(data.adminNotes)}</p>` : ''}
               </div>
               
               <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -110,13 +119,13 @@ export async function sendStatusUpdateEmail(data: EmailNotificationData) {
             </div>
             
             <div style="padding: 30px;">
-              <p>Hi ${data.studentName},</p>
+              <p>Hi ${escapeHtml(data.studentName)},</p>
               
               <p>We need some additional information to process your reimbursement request.</p>
               
               <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
                 <h3 style="margin-top: 0; color: #92400e;">Information Requested</h3>
-                <p>${data.adminNotes || 'Please check your dashboard for specific requirements.'}</p>
+                <p>${escapeHtml(data.adminNotes || 'Please check your dashboard for specific requirements.')}</p>
               </div>
               
               <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">

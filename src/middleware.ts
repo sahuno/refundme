@@ -11,8 +11,9 @@ export async function middleware(req: NextRequest) {
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   
-  // Strict CSP for production
+  // Production-only security headers
   if (process.env.NODE_ENV === 'production') {
+    res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
     res.headers.set(
       'Content-Security-Policy',
       "default-src 'self'; " +
@@ -72,10 +73,12 @@ export async function middleware(req: NextRequest) {
   // List of public paths that don't require authentication
   const publicPaths = ['/login', '/register', '/auth/callback', '/']
   
-  // In production, block all test endpoints
-  if (process.env.NODE_ENV === 'production' && 
-      (req.nextUrl.pathname.startsWith('/api/test') || 
-       req.nextUrl.pathname === '/test')) {
+  // In production, block all test and debug endpoints
+  if (process.env.NODE_ENV === 'production' &&
+      (req.nextUrl.pathname.startsWith('/api/test') ||
+       req.nextUrl.pathname === '/test' ||
+       req.nextUrl.pathname.includes('/auth-debug') ||
+       req.nextUrl.pathname.includes('/debug'))) {
     return new Response('Not Found', { status: 404 })
   }
   

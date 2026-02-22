@@ -19,6 +19,15 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@university.edu'
 const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 async function sendSubmissionEmail(data: RequestSubmissionData) {
   if (!RESEND_API_KEY) {
     console.log('No Resend API key configured - email notification skipped')
@@ -26,11 +35,11 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
   }
 
   try {
-    const itemsTable = data.items.map(item => 
+    const itemsTable = data.items.map(item =>
       `<tr>
-        <td style="border: 1px solid #ddd; padding: 8px;">${item.date}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">${item.description}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">${item.category}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.date)}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.description)}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.category)}</td>
         <td style="border: 1px solid #ddd; padding: 8px;">$${item.amount.toFixed(2)}</td>
       </tr>`
     ).join('')
@@ -38,12 +47,12 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">New Reimbursement Request Submitted</h2>
-        
+
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Request Details</h3>
-          <p><strong>Student:</strong> ${data.student_name}</p>
-          ${data.department ? `<p><strong>Department:</strong> ${data.department}</p>` : ''}
-          <p><strong>Request ID:</strong> ${data.request_id}</p>
+          <p><strong>Student:</strong> ${escapeHtml(data.student_name)}</p>
+          ${data.department ? `<p><strong>Department:</strong> ${escapeHtml(data.department)}</p>` : ''}
+          <p><strong>Request ID:</strong> ${escapeHtml(data.request_id)}</p>
           <p><strong>Total Amount:</strong> $${data.total_amount.toFixed(2)}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
         </div>
@@ -79,7 +88,7 @@ async function sendSubmissionEmail(data: RequestSubmissionData) {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: [data.admin_email],
-        subject: `New Reimbursement Request from ${data.student_name}${data.department ? ` (${data.department})` : ''} - $${data.total_amount.toFixed(2)}`,
+        subject: `New Reimbursement Request from ${escapeHtml(data.student_name)}${data.department ? ` (${escapeHtml(data.department)})` : ''} - $${data.total_amount.toFixed(2)}`,
         html: emailHtml,
       }),
     })
@@ -217,13 +226,7 @@ export async function POST(req: Request) {
 }
 
 // Add OPTIONS for CORS support (for mobile app)
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: Request) {
+  const { corsOptionsResponse } = await import('@/lib/cors')
+  return corsOptionsResponse(request, 'POST')
 }
