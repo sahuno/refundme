@@ -50,6 +50,7 @@ class AuthViewModel: ObservableObject {
     }
     
     func signOut() async {
+        KeychainService.clearAll()
         currentUser = nil
         isAuthenticated = false
     }

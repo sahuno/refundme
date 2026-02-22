@@ -16,4 +16,8 @@ enum AppConfig {
     
     static let apiVersion = "v1"
     static let plaidEnvironment = "sandbox" // Change to "production" for release
+
+    // Sentry DSN for crash reporting — set to your project DSN
+    // Create a project at https://sentry.io and paste the DSN here
+    static let sentryDSN = ""
 }

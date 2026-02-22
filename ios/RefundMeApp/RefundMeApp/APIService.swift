@@ -6,7 +6,7 @@ class APIService {
     private init() {}
     
     private var accessToken: String? {
-        return UserDefaults.standard.string(forKey: "accessToken")
+        return KeychainService.get(.accessToken)
     }
     
     private func authHeaders() -> [String: String] {
@@ -90,8 +90,11 @@ class APIService {
             throw APIError.authenticationFailed
         }
         
-        // Store access token
-        UserDefaults.standard.set(session.accessToken, forKey: "accessToken")
+        // Store access token securely
+        KeychainService.save(session.accessToken, for: .accessToken)
+        if let refreshToken = session.refreshToken {
+            KeychainService.save(refreshToken, for: .refreshToken)
+        }
         
         // Convert profile response to User object
         let dateFormatter = DateFormatter()
@@ -199,8 +202,11 @@ class APIService {
         let decoder = JSONDecoder()
         let authResponse = try decoder.decode(AuthResponse.self, from: data)
         
-        // Save the access token
-        UserDefaults.standard.set(authResponse.session.accessToken, forKey: "accessToken")
+        // Save the access token securely
+        KeychainService.save(authResponse.session.accessToken, for: .accessToken)
+        if let refreshToken = authResponse.session.refreshToken {
+            KeychainService.save(refreshToken, for: .refreshToken)
+        }
         
         // Convert profile response to User model
         let userProfile: User

@@ -112,6 +112,7 @@
 			);
 			name = RefundMeApp;
 			packageProductDependencies = (
+				84A2EB022DEC000100D60A32 /* Sentry */,
 			);
 			productName = RefundMeApp;
 			productReference = 84A2EA1A2DEB4E0B00D60A32 /* RefundMeApp.app */;
@@ -198,6 +199,7 @@
 			packageReferences = (
 				84A2EA682DEB51B600D60A32 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				84A2EAF32DEB640300D60A32 /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+				84A2EB012DEC000000D60A32 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84A2EA1B2DEB4E0B00D60A32 /* Products */;
@@ -401,6 +403,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RefundMeApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RefundMe;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +433,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RefundMeApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RefundMe;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -572,7 +580,23 @@
 				minimumVersion = 6.2.0;
 			};
 		};
+		84A2EB012DEC000000D60A32 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.40.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		84A2EB022DEC000100D60A32 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84A2EB012DEC000000D60A32 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 84A2EA122DEB4E0B00D60A32 /* Project object */;
 }
